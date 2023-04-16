@@ -1,9 +1,0 @@
-# One domain per line to unblock
-# !!! Comments must start with hash on first column
-#
-# 微信红包封面
-as.weixin.qq.com
-# 小米盒子
-pandora.xiaomi.com
-# B站市场活动
-cm.bilibili.com
