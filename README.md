@@ -1,5 +1,5 @@
 # adhole
-Adhole, A better pi-hole based on unbound DNS Server
+Adhole, a lightweight [pi-hole](https://github.com/pi-hole/pi-hole) without management ad-hocs, depends on [unbound](https://github.com/NLnetLabs/unbound) DNS Server 
 
 # Files
   - adhole.sh: the main script to generate adhole.conf.xz, thanks to:
@@ -15,3 +15,4 @@ Adhole, A better pi-hole based on unbound DNS Server
 # Release: [adhole.conf.xz](https://raw.githubusercontent.com/LeisureLinux/adhole/main/adhole.conf.xz)
   - The **dynamic generated** list to be added in unbound DNS server
   - use unxz command or xz -d adhole.conf.xz to decompress to your unbound config path
+  - xz & unxz commands are from package: xz-utils
