@@ -4,8 +4,8 @@ Adhole, a lightweight [pi-hole](https://github.com/pi-hole/pi-hole) without mana
 # Usage
   Just git clone this repo, and run ./adhole.sh, which will generate a new adhole.conf.xz
   
-# Todo
-  - Add nsd/unbound setup script
+# nsd+unbound DNS setup
+  - see [unbound/README.md](unbound/README.md)
   
 # Files
   - adhole.sh: the main script to generate adhole.conf.xz, thanks to:
