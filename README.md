@@ -12,5 +12,6 @@ Adhole, A better pi-hole
   - unblock_domains.txt: In case you **don't** want to block some domains, e.g. exeptions
   - LICENSE: MIT License, e.g. modify at your own will, no warranty
      
-# Release: adhole.conf.xz
+# Release: [adhole.conf.xz](https://raw.githubusercontent.com/LeisureLinux/adhole/main/adhole.conf.xz)
   - The **dynamic generated** list to be added in unbound DNS server
+  - use unxz command or xz -d adhole.conf.xz to decompress to your unbound config path
