@@ -4,7 +4,7 @@
 # Modify PROXY to your own
 PROXY="--proxy socks5h://wpad.local:2023"
 #
-URL="https://raw.githubusercontent.com/LeisureLinux/adhole/main/adhole.conf.xz"
+URL="https://raw.githubusercontent.com/LeisureLinux/adhole/main/data/adhole.conf.xz"
 CONF_DIR="/etc/unbound/adhole"
 CONF=$(basename $URL .xz)
 curl -sS $PROXY $URL -o /tmp/$CONF.xz

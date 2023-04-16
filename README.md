@@ -1,3 +1,6 @@
+# adhole
+Adhole, a lightweight [pi-hole](https://github.com/pi-hole/pi-hole) without management ad-hocs, depends on [unbound](https://github.com/NLnetLabs/unbound) DNS Server 
+
 # Enjoy the Ad-hassle-free world
   1. Purchase a raspberry Pi or similar SBC(Single Board Computer)
   2. Find a 16GB (suggested) SD-Card, burn with latest Debian/Ubuntu image(prefer 64-bit OS if your board support) 
