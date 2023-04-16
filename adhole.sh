@@ -12,7 +12,8 @@ BLOCK_DOM=$(dirname $0)/block_domains.txt
 UNBLOCK_DOM=$(dirname $0)/unblock_domains.txt
 TMP_FILE=/tmp/$(basename $ZONE_FILE).tmp
 
-touch $ZONE_FILE $BLOCK_URL $BLOCK_DOM $UNBLOCK_DOM $TMP_FILE
+touch $ZONE_FILE $ZONE_FILE.xz $BLOCK_URL $BLOCK_DOM $UNBLOCK_DOM $TMP_FILE
+[ ! -x /usr/bin/xz ] && echo "Error: to save space, please install xz-utils" && exit 1
 
 counts() {
 	[ -r "$1" ] && echo "Info: Blocked $(grep "^local-zone" $1 | wc -l) domains"
@@ -43,7 +44,7 @@ echo "Info: Add local block domain list ..."
 grep -v "^#" $BLOCK_DOM | awk '{print "local-zone: \"" $1 "\" always_null"}' >>$TMP_FILE
 counts $TMP_FILE
 #
-mv $ZONE_FILE $ZONE_FILE.old 2>/dev/null
+mv $ZONE_FILE.xz $ZONE_FILE.xz.old 2>/dev/null
 # Add head
 cat >$ZONE_FILE <<EOH
 # Syntax: unbound
@@ -58,3 +59,4 @@ grep -v "0.0.0.0" $TMP_FILE | sed -e 's/\."/"/g' | grep -E -v "$exclude_domain" 
 rm $TMP_FILE
 echo "Info: results after deduplication:"
 counts $ZONE_FILE
+xz $ZONE_FILE
