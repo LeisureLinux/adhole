@@ -1,0 +1,11 @@
+[Unit]
+Description=wpad record updater
+
+[Timer]
+# W Y-m-d H:M:S
+OnCalendar=*-*-* *:00,10,20,30,40,50:00
+AccuracySec=1m
+Persistent=true
+
+[Install]
+WantedBy=timers.target

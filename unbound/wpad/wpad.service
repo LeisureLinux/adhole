@@ -1,0 +1,13 @@
+# Update wpad. record 
+[Unit]
+Description=Update wpad. record
+DefaultDependencies=no
+After=unbound.service
+
+[Service]
+ExecStart=/etc/unbound/wpad.sh
+# Restart=always
+# RestartSec=0
+
+[Install]
+WantedBy=multi-user.target
