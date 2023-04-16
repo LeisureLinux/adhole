@@ -11,7 +11,8 @@
 # 初始化 adhole 系统的版本
 VER="1.0.2"
 # Packages to install on Debian/Ubuntu systems
-PKGS="vim curl python3 python3-pip nginx jq git shfmt netcat util-linux tree avahi-daemon nsd unbound libpython3.9 bind9-dnsutils network-manager "
+PKGS="vim curl python3 python3-pip nginx jq git shfmt netcat util-linux tree \
+    avahi-daemon nsd unbound libpython3.9 bind9-dnsutils network-manager dos2unix"
 # Modify to suit your own data
 TZONE="Asia/Shanghai"
 NTP="ntp.aliyun.com"
