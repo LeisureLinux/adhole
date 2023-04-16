@@ -46,11 +46,12 @@ counts $TMP_FILE
 #
 mv $ZONE_FILE.xz $ZONE_FILE.xz.old 2>/dev/null
 # Add head
+T=$(date +"%Y-%m-%dT%H:%M:%S%z")
 cat >$ZONE_FILE <<EOH
 # Syntax: unbound
 # Source: LeisureLinux
 # URL: https://github.com/LeisureLinux/adhole
-# UpdateTime: $(date +"%Y-%m-%dT%H:%M:%S%z")
+# UpdateTime: $T
 EOH
 # remove unblock domains from the generated block list and deduplicate
 exclude_domain=$(grep -v "^#" $UNBLOCK_DOM | xargs | tr " " "|")
@@ -60,3 +61,4 @@ rm $TMP_FILE
 echo "Info: results after deduplication:"
 counts $ZONE_FILE
 xz $ZONE_FILE
+[ "$(git config --get remote.origin.url 2>/dev/null)" = "git@github.com:LeisureLinux/adhole.git" ] && git commit $ZONE_FILE.xz -m "Updated on $T" && git push
