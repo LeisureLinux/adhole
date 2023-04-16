@@ -1,6 +1,12 @@
 # adhole
 Adhole, a lightweight [pi-hole](https://github.com/pi-hole/pi-hole) without management ad-hocs, depends on [unbound](https://github.com/NLnetLabs/unbound) DNS Server 
 
+# Usage
+  Just git clone this repo, and run ./adhole.sh, which will generate a new adhole.conf.xz
+  
+# Todo
+  - Add nsd/unbound setup script
+  
 # Files
   - adhole.sh: the main script to generate adhole.conf.xz, thanks to:
      - https://unbound.oisd.nl/
