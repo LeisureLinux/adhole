@@ -2,7 +2,7 @@
 # Generate ADBlock list from different source in unbound local-zone format with "always_null"
 # Generate your own adblock list for your home LAN
 # Copyright: LeisureLinux(Bilibili ID)
-# If need proxy change the proxy server to yours, otherwise just comment PROXY
+# If need proxy, change the PROXY to yours
 PROXY="--proxy socks5h://wpad.local:2023"
 #
 ZONE_FILE=$(dirname $0)/adhole.conf
@@ -13,7 +13,7 @@ UNBLOCK_DOM=$(dirname $0)/unblock_domains.txt
 TMP_FILE=/tmp/$(basename $ZONE_FILE).tmp
 
 touch $ZONE_FILE $ZONE_FILE.xz $BLOCK_URL $BLOCK_DOM $UNBLOCK_DOM $TMP_FILE
-[ ! -x /usr/bin/xz ] && echo "Error: to save space, please install xz-utils" && exit 1
+[ ! -x /usr/bin/xz ] && echo "Error: to save space, please install xz-utils package" && exit 1
 
 counts() {
 	[ -r "$1" ] && echo "Info: Blocked $(grep "^local-zone" $1 | wc -l) domains"
@@ -60,5 +60,11 @@ grep -v "0.0.0.0" $TMP_FILE | sed -e 's/\."/"/g' | grep -E -v "$exclude_domain" 
 rm $TMP_FILE
 echo "Info: results after deduplication:"
 counts $ZONE_FILE
+# Need root to run below, though still add sudo to make it run in command line as non-root user
+[ -x /usr/sbin/unbound-control -a ! -d /etc/unbound/adhole ] && sudo mkdir -p /etc/unbound/adhole 2>/dev/null
+[ -d /etc/unbound/adhole ] && sudo mv /etc/unbound/adhole/adhole.conf /etc/unbound/adhole/adhole.conf.old 2>/dev/null && sudo cp $ZONE_FILE /etc/unbound/adhole
+[ -x /usr/sbin/unbound-control ] && echo "Info: Reloading zones ..." && sudo /usr/sbin/unbound-control reload
+# Compress to save space
 xz $ZONE_FILE
+
 [ "$(git config --get remote.origin.url 2>/dev/null)" = "git@github.com:LeisureLinux/adhole.git" ] && git commit $ZONE_FILE.xz -m "Updated on $T" && git push
