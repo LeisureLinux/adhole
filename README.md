@@ -1,5 +1,5 @@
 # adhole
-Adhole, A better pi-hole
+Adhole, A better pi-hole based on unbound DNS Server
 
 # Files
   - adhole.sh: the main script to generate adhole.conf.xz, thanks to:
