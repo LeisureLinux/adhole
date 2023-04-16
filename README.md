@@ -6,7 +6,7 @@ Adhole, a lightweight [pi-hole](https://github.com/pi-hole/pi-hole) without mana
   2. Find a 16GB (suggested) SD-Card, burn with latest Debian/Ubuntu image(prefer 64-bit OS if your board support) 
   3. Upgrade your OS and packages to the latest version (run: sudo apt dist-upgrade) 
   4. Plugin your board into Wi-Fi router, bind your board MAC address to a static IP on your router's DHCP setting(preferred)
-  5. After successfully setup the board according to below steps, point your Wi-Fi router's LAN DHCP config's DNS server to the boards's IP
+  5. After successfully setup the board according to below steps, point your Wi-Fi router's LAN DHCP config's DNS server to the board's IP
  
 # nsd+unbound install/setup steps
   1. Run ./install_pkg.sh to install the packages
