@@ -28,7 +28,7 @@ Adhole, a lightweight [pi-hole](https://github.com/pi-hole/pi-hole) without mana
   - We use nsd as root server to avoid DNS hijacking by ISP, normally root will tell us the correct NS record
   - On the board or the host itself, we use 127.0.0.1:53 e.g. unbound as local DNS resolver
 
-# Cron
+# Pull zone config from github
   - Write a daily cron is a piece of cake, before add to cron, run it manually as root first in terminal
   ```
     crontab -e
