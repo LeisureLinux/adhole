@@ -1,8 +1,10 @@
 #!/bin/sh
 # Run as root cron
-# pull the latest adhole.conf from github
-# put your proxy server into .proxy, e.g. http://IP:port or socks5://IP:port
-PFILE="$(dirname $0)/.proxy"
+# pull the latest adhole.conf.zst from github
+# put your proxy server e.g. http://IP:port or socks5://IP:port to .proxy
+# touch a .wpad file in your env. to tell unbound add wpad record after zone reload
+WORK_DIR=$(dirname $0)
+PFILE="$WORK_DIR/.proxy"
 [ -r "$PFILE" ] && PROXY="--proxy $(cat $PFILE)"
 [ ! -x /usr/bin/zst ] && echo "Error: Please install zst package" && exit
 #
@@ -15,7 +17,6 @@ curl -sS $PROXY $URL -o /tmp/$CONF.zst
 [ -r $CONF_DIR/$CONF ] && mv $CONF_DIR/$CONF $CONF_DIR/$CONF.bak
 [ -d $CONF_DIR ] && echo "Info: Decompressing ..." && zst -ck \
 	-d /tmp/$CONF.zst >$CONF_DIR/$CONF && rm /tmp/$CONF.zst
-[ -x /usr/sbin/unbound-control ] && echo "Info: reload unbound ..." && /usr/sbin/unbound-control reload
-# touch a .wpad file in your env. to tell unbound add wpad record after zone reload
-WORK_DIR=$(dirname $0)
+# write wpad.conf
 [ -r $WORK_DIR/.wpad -a -x $WORK_DIR/wpad/wpad.sh ] && $WORK_DIR/wpad/wpad.sh
+[ -x /usr/sbin/unbound-control ] && echo "Info: reload unbound ..." && /usr/sbin/unbound-control reload

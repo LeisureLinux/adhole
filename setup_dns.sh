@@ -62,6 +62,7 @@ sudo chown unbound /var/lib/unbound/logs
 [ $? != 0 ] && echo "Error: there is issue in unbound installation" && exit 3
 sudo cp -f conf/nsd.conf /etc/nsd
 sudo cp -f conf/unbound.conf /etc/unbound
+sudo touch /etc/unbound/wpad.conf
 echo "Info: Enabling nsd and unbound service ..."
 sudo systemctl enable nsd
 sudo systemctl start nsd
