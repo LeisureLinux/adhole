@@ -1,8 +1,9 @@
 #!/bin/sh
 # Run as root cron
 # pull the latest adhole.conf from github
-# Modify PROXY to your own
-PROXY="--proxy socks5h://wpad.local:2023"
+# put your proxy server into .proxy, e.g. http://IP:port or socks5://IP:port
+PFILE="$(dirname $0)/.proxy"
+[ -r "$PFILE" ] && PROXY="--proxy $(cat $PFILE)"
 [ ! -x /usr/bin/zst ] && echo "Error: Please install zst package" && exit
 #
 URL="https://raw.githubusercontent.com/LeisureLinux/adhole/main/data/adhole.conf.zst"
