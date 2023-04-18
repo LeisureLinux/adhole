@@ -16,8 +16,8 @@ BLOCK_DOM=$(dirname $0)/block_domains.txt
 UNBLOCK_DOM=$(dirname $0)/unblock_domains.txt
 TMP_FILE=/tmp/$(basename $ZONE_FILE).tmp
 
-touch $ZONE_FILE $ZONE_FILE.xz $BLOCK_URL $BLOCK_DOM $UNBLOCK_DOM $TMP_FILE $TEXT_URL
-[ ! -x /usr/bin/xz ] && echo "Error: to save space, please install xz-utils package" && exit 1
+touch $ZONE_FILE $ZONE_FILE.zst $BLOCK_URL $BLOCK_DOM $UNBLOCK_DOM $TMP_FILE $TEXT_URL
+[ ! -x /usr/bin/zst ] && echo "Error: to save space, please install zst package" && exit 1
 
 counts() {
 	[ -r "$1" ] && echo "Info: Blocked $(grep "^local-zone" $1 | wc -l) domains"
@@ -67,7 +67,7 @@ echo "Info: Add local block domain list ..."
 grep -v "^#" $BLOCK_DOM | awk '{print "local-zone: \"" $1 "\" always_null"}' >>$TMP_FILE
 counts $TMP_FILE
 #
-mv $ZONE_FILE.xz $ZONE_FILE.xz.old 2>/dev/null
+mv $ZONE_FILE.zst $ZONE_FILE.zst.old 2>/dev/null
 # Add head
 T=$(date +"%Y-%m-%dT%H:%M:%S%z")
 cat >$ZONE_FILE <<EOH
@@ -85,4 +85,4 @@ rm $TMP_FILE
 echo "Info: results after deduplication:"
 counts $ZONE_FILE
 echo "Info: compressing $ZONE_FILE ..."
-xz $ZONE_FILE
+zst $ZONE_FILE
