@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # Run as root cron
 # pull the latest adhole.conf.zst from github
 # put your proxy server e.g. http://IP:port or socks5://IP:port to .proxy
@@ -12,12 +12,14 @@ URL="https://raw.githubusercontent.com/LeisureLinux/adhole/main/data/adhole.conf
 #
 CONF_DIR="/etc/unbound/adhole"
 CONF=$(basename $URL .zst)
-if [ ! -r $CONF_DIR/$CONF -o "$(find $CONF_DIR/$CONF -mtime +1)" ]; then
+if [ ! -r $CONF_DIR/$CONF -o "$(find $CONF_DIR/$CONF -mtime +1 2>/dev/null)" ]; then
 	echo "Info: downloading zone config $CONF.zst file from github ..."
 	curl -sS $PROXY $URL -o /tmp/$CONF.zst
 	[ $? != 0 ] && echo "Error: Download $URL failed!" && exit 1
 	echo "Info: Decompressing ..." && zst -ck \
 		-d /tmp/$CONF.zst >$CONF_DIR/$CONF && rm /tmp/$CONF.zst
+else
+	echo "Info: $CONF is not expired yet."
 fi
 # [ -r $CONF_DIR/$CONF ] && mv $CONF_DIR/$CONF $CONF_DIR/$CONF.bak
 # write wpad.conf
