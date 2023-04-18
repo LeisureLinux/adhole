@@ -14,6 +14,7 @@ local-data: "local. 10800 IN NS localhost."
 local-data: "wpad. 3600 IN A $HIP"
 local-data: "wpad.local. 3600 IN A $HIP"
 EOF
+exit 1
 # [ $? != 0 ] && echo "Error: not able to update wpad. record!" && exit 6
 # [ "$(dig -4 +short wpad.local. @localhost)" != "$HIP" ] && echo "Error: added wpad not able to resolv!" && exit 7
 # echo "Congrats, All is well! Added wpad. as $HIP"

@@ -20,8 +20,12 @@ if [ ! -r $CONF_DIR/$CONF -o "$(find $CONF_DIR/$CONF -mtime +1 2>/dev/null)" ]; 
 		-d /tmp/$CONF.zst >$CONF_DIR/$CONF && rm /tmp/$CONF.zst
 else
 	echo "Info: $CONF is not expired yet."
+	RELOAD=0
 fi
 # [ -r $CONF_DIR/$CONF ] && mv $CONF_DIR/$CONF $CONF_DIR/$CONF.bak
 # write wpad.conf
-[ -r $WORK_DIR/.wpad -a -x $WORK_DIR/wpad/wpad.sh ] && $WORK_DIR/wpad/wpad.sh
-[ -x /usr/sbin/unbound-control ] && echo "Info: reloading unbound ..." && /usr/sbin/unbound-control reload
+if [ -r $WORK_DIR/.wpad -a -x $WORK_DIR/wpad/wpad.sh ]; then
+	$WORK_DIR/wpad/wpad.sh
+	[ $? == 0 ] && RELOAD=0
+fi
+[ "$RELOAD" != "0" -a -x /usr/sbin/unbound-control ] && echo "Info: reloading unbound ..." && /usr/sbin/unbound-control reload
