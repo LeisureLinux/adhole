@@ -28,4 +28,8 @@ if [ -r $WORK_DIR/.wpad -a -x $WORK_DIR/wpad/wpad.sh ]; then
 	$WORK_DIR/wpad/wpad.sh
 	[ $? = 0 ] && RELOAD=0
 fi
-[ "$RELOAD" != "0" -a -x /usr/sbin/unbound-control ] && echo "Info: reloading unbound ..." && /usr/sbin/unbound-control reload
+if [ "$RELOAD" != "0" ]; then
+	[ -x /usr/sbin/unbound-control ] && echo "Info: reloading unbound ..." && /usr/sbin/unbound-control reload
+else
+	echo "Info: No need to reload zone"
+fi
