@@ -37,6 +37,7 @@ EOW
 add_wpad
 # if exist $1 and readable, then just use the local file
 if [ -r "$1" ]; then
+	echo "Info: reading $1 and decompressing ... "
 	sudo cp $1 /etc/unbound/adhole
 	sudo zst -f -d /etc/unbound/adhole/$(basename $1)
 	RELOAD=1
