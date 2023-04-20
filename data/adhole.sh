@@ -57,10 +57,12 @@ counts $TMP_FILE
 for url in $(grep -v "^#" $BLOCK_URL); do
 	block $url
 done
-#
-for url in $(grep -v "^#" $TEXT_URL); do
-	block_text $url
-done
+# use $0 -s to skip the big text urls
+if [ "$1" != "-s" ]; then
+	for url in $(grep -v "^#" $TEXT_URL); do
+		block_text $url
+	done
+fi
 
 #
 echo "Info: Add local block domain list ..."
