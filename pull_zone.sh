@@ -12,7 +12,7 @@ URL="https://raw.githubusercontent.com/LeisureLinux/adhole/main/data/adhole.conf
 #
 CONF_DIR="/etc/unbound/adhole"
 CONF=$(basename $URL .zst)
-if [ ! -r $CONF_DIR/$CONF -o "$(find $CONF_DIR/$CONF -mtime +1 2>/dev/null)" ]; then
+if [ ! -r $CONF_DIR/$CONF -o "$(find $CONF_DIR/$CONF -mtime 0 2>/dev/null)" ]; then
 	echo "Info: downloading zone config $CONF.zst file from github ..."
 	curl -sS $PROXY $URL -o /tmp/$CONF.zst
 	[ $? != 0 ] && echo "Error: Download $URL failed!" && exit 1
