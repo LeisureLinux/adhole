@@ -33,17 +33,24 @@ EOW
 	# echo "Congrats, All is well! Added wpad. as $HIP"
 }
 
+# Main Prog.
 add_wpad
-
-if [ ! -r $CONF_DIR/$CONF -o "$(find $CONF_DIR/$CONF -mtime +0 2>/dev/null)" ]; then
-	echo "Info: downloading zone config $CONF.zst file from github ..."
-	curl -sS $PROXY $URL -o /tmp/$CONF.zst
-	[ $? != 0 ] && echo "Error: Download $URL failed!" && exit 1
-	echo "Info: Decompressing ..." && zst -ck \
-		-d /tmp/$CONF.zst >$CONF_DIR/$CONF && rm /tmp/$CONF.zst
+# if exist $1 and readable, then just use the local file
+if [ -r "$1" ]; then
+	sudo cp $1 /etc/unbound/adhole
+	sudo zst -f -d /etc/unbound/adhole/$(basename $1)
 	RELOAD=1
 else
-	echo "Info: $CONF is not expired yet."
+	if [ ! -r $CONF_DIR/$CONF -o "$(find $CONF_DIR/$CONF -mtime +0 2>/dev/null)" ]; then
+		echo "Info: downloading zone config $CONF.zst file from github ..."
+		curl -sS $PROXY $URL -o /tmp/$CONF.zst
+		[ $? != 0 ] && echo "Error: Download $URL failed!" && exit 1
+		echo "Info: Decompressing ..." && zst -ck \
+			-d /tmp/$CONF.zst >$CONF_DIR/$CONF && rm /tmp/$CONF.zst
+		RELOAD=1
+	else
+		echo "Info: $CONF is not expired yet."
+	fi
 fi
 # [ -r $CONF_DIR/$CONF ] && mv $CONF_DIR/$CONF $CONF_DIR/$CONF.bak
 [ "$RELOAD" = "1" -a -x /usr/sbin/unbound-control ] && echo "Info: reloading unbound ..." && /usr/sbin/unbound-control reload
