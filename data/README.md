@@ -11,6 +11,18 @@
   - block_domains.txt: Add your own domains to block, **LeisureLinux** is collecting more
   - unblock_domains.txt: In case you **don't** want to block some domains, e.g. exeptions
   - LICENSE: MIT License, e.g. modify at your own will, no warranty
+
+# .gitignore
+  cache for one day now, e.g. added .cache dir
+```
+cat ../.gitignore|sort -r
+.wpad
+.proxy
+.gitignore
+data/deploy.sh
+data/.cache
+adhole.conf.zst.old
+```
      
 # Release: [adhole.conf.zst](https://raw.githubusercontent.com/LeisureLinux/adhole/main/data/adhole.conf.zst)
   - The **dynamic generated** list to be added in unbound DNS server
