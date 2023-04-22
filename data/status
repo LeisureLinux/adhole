@@ -1,0 +1,373 @@
+URL: https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.2o7Net/hosts
+# No head from source
+Info: Blocked 2030 domains
+
+URL: https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Risk/hosts
+# No head from source
+Info: Blocked 2189 domains
+
+URL: https://v.firebog.net/hosts/AdguardDNS.txt
+# AdguardDNS, parsed and mirrored by https://firebog.net
+# Updated 19APR23 from https://filters.adtidy.org/extension/chromium/filters/15.txt
+# This is sourced from an "adblock" style list which may contain mistakes in how it is parsed
+# Please bring any such issues up at https://github.com/WaLLy3K/wally3k.github.io/issues
+# List corrections can be requested at https://github.com/AdguardTeam/AdGuardSDNSFilter/issues
+Info: Blocked 50237 domains
+
+URL: https://v.firebog.net/hosts/Admiral.txt
+# Admiral, parsed and mirrored by https://firebog.net
+# Updated 17OCT22 from https://raw.githubusercontent.com/LanikSJ/ubo-filters/main/filters/getadmiral-domains.txt
+# This is sourced from an "adblock" style list which may contain mistakes in how it is parsed
+# Please bring any such issues up at https://github.com/WaLLy3K/wally3k.github.io/issues
+# Please contact the original maintainer for any list corrections
+Info: Blocked 1013 domains
+
+URL: https://blocklistproject.github.io/Lists/adobe.txt
+# ------------------------------------[UPDATE]--------------------------------------
+# Title: The Block List Project - Adobe List
+# Expires: 1 day
+# Homepage: https://blocklist.site
+# Help: https://github.com/blocklistproject/lists/wiki/
+# License: https://unlicense.org
+# ------------------------------------[SUPPORT]-------------------------------------
+# You can support by:
+# - reporting false positives
+# - making a donation: https://paypal.me/blocklistproject
+# -------------------------------------[INFO]---------------------------------------
+#
+# Adobe list
+# ------------------------------------[FILTERS]-------------------------------------
+Info: Blocked 399 domains
+
+URL: https://www.github.developerdan.com/hosts/lists/ads-and-tracking-extended.txt
+# Title: Lightswitch05's ads-and-tracking-extended.txt
+# Released: 2023-04-22T01:05:23+00:00
+# Count: 432386 domains
+# Homepage: https://www.github.developerdan.com/hosts/
+# Issues: https://github.com/lightswitch05/hosts/issues
+# Source: https://www.github.developerdan.com/hosts/lists/ads-and-tracking-extended.txt
+# Expires: 2 days
+# Copyright 2023 Daniel White
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+Info: Blocked 432303 domains
+
+URL: https://raw.githubusercontent.com/anudeepND/blacklist/master/adservers.txt
+# Host file to block ads, tracking and more! Updated daily
+# Homepage: https://github.com/anudeepND/blacklist
+# Mirror: https://hosts.anudeep.me/mirror/
+# Release: https://github.com/anudeepND/blacklist/releases
+# Licence: https://github.com/anudeepND/blacklist/blob/master/LICENSE
+# Title: Anudeep's Blacklist
+# Expires: 1 days
+# Hosts contributed by Anudeep <anudeep@protonmail.com>
+# Domain count: 42,536
+# ===================================================================
+Info: Blocked 42536 domains
+
+URL: https://raw.githubusercontent.com/Perflyst/PiHoleBlocklist/master/AmazonFireTV.txt
+# required for apps to be installed
+#mas-ext.amazon.com
+# required for app installation / updates
+# amazonadsi-a.akamaihd.net
+# alexa
+#cortana-gateway.amazon.com
+#api.amazonalexa.com
+#avs.eu.amazonalexa.com
+# updates
+#softwareupdates.amazon.com
+#d3h5bk8iotgjvw.cloudfront.net
+#d63r8xi1zu867.cloudfront.net
+#d1s31zyz7dcc2d.cloudfront.net
+Info: Blocked 17 domains
+
+URL: https://raw.githubusercontent.com/Perflyst/PiHoleBlocklist/master/android-tracking.txt
+# Created with:
+# LineageOS 14.1
+# Android 6 on Huawei
+# Android 8 OnePlus
+# iPhone 6
+# Facebook
+# graph.facebook.com # needed for facebook groups
+# b-graph.facebook.com # needed for facebook pages manager
+# b-api.facebook.com # required for Facebook Messenger login on mobile
+# edge-mqtt.facebook.com # needed for facebook groups
+# Crashlytics
+# Uncatagorized
+Info: Blocked 80 domains
+
+URL: https://raw.githubusercontent.com/DandelionSprout/adfilt/master/Alternate%20versions%20Anti-Malware%20List/AntiMalwareHosts.txt
+# Title: 💊 Dandelion Sprout's Anti-Malware List («hosts» file version)
+# Version: 10April2023v1
+# Expires: 2 days
+# Description: This list goes the extra kilometer to prevent more malware than other mainstream anti-malware lists. It blocks heavily abused top-level domains (and even search engine results for them), blocks domains used in malware redirection trains and in domain parking schemes, blocks sponsored Windows PUP nags on PC guide articles, uses mass blocking of domains belonging to bad IPs, and has many other subcategories that give it a solid advantage over similar lists out there.
+# ——— Bad top-level domains ———
+# You can expect these domains to have an overwhelming majority of malware domains that have nothing to do with the countries in question. Nevertheless, if you are in a situation where you have to do active business in any of the countries in question, then this list may not be ideal for you.
+# When asking us to whitelist a site: Make sure the site has some sort of public content. Non-public sites and alias sites are usually not whitelisted.
+# Tokelau (Put on break due to too many whitelistings being needed)
+# Gabon
+# Mali (Put on break due to too many and too frequent whitelistings being needed)
+# Equatorial Guinea
+# Central African Republic
+# Palau
+# Legitimate use is almost non-existent, but has a tiny userbase in Japan. Its extreme common-ness in malware redirections means that the entry will be kept forever.
+# International topical domains that have consistently horrendous scores on watchlists of bad TLDs, and whose use for legit purposes is practically non-existent.
+Info: Blocked 12463 domains
+
+URL: https://v.firebog.net/hosts/Easylist.txt
+# Easylist, parsed and mirrored by https://firebog.net
+# Updated 19APR23 from https://easylist-downloads.adblockplus.org/easylist.txt
+# This is sourced from an "adblock" style list which may contain mistakes in how it is parsed
+# Please bring any such issues up at https://github.com/WaLLy3K/wally3k.github.io/issues
+# List corrections can be requested at https://github.com/easylist/easylist#list-issues
+Info: Blocked 22900 domains
+
+URL: https://v.firebog.net/hosts/Easyprivacy.txt
+# Easyprivacy, parsed and mirrored by https://firebog.net
+# Updated 21APR23 from https://easylist-downloads.adblockplus.org/easyprivacy.txt
+# This is sourced from an "adblock" style list which may contain mistakes in how it is parsed
+# Please bring any such issues up at https://github.com/WaLLy3K/wally3k.github.io/issues
+# List corrections can be requested at https://github.com/easylist/easylist#list-issues
+Info: Blocked 15393 domains
+
+URL: https://raw.githubusercontent.com/anudeepND/blacklist/master/facebook.txt
+# Host file to block ads, tracking and more! Updated daily
+# Project home page: https://github.com/anudeepND/blacklist
+# Licence: https://github.com/anudeepND/blacklist/blob/master/LICENSE
+# Title: Anudeep's Facebook Blacklist
+# Expires: 1 days
+# Hosts contributed by Anudeep <anudeep@protonmail.com>
+# Domain count: 3,997
+# ===================================================================
+Info: Blocked 3996 domains
+
+URL: https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn/hosts
+# Title: StevenBlack/hosts with the fakenews, gambling and porn extensions
+#
+# This hosts file is a merged collection of hosts from reputable sources,
+# with a dash of crowd sourcing via GitHub
+#
+# Date: 19 April 2023 16:14:54 (UTC)
+# Extensions added to this file: fakenews, gambling, porn
+# Number of unique domains: 227,988
+#
+# Fetch the latest version of this file: https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn/hosts
+# Project home page: https://github.com/StevenBlack/hosts
+# Project releases: https://github.com/StevenBlack/hosts/releases
+#
+# ===============================================================
+Info: Blocked 227955 domains
+
+URL: https://hostfiles.frogeye.fr/firstparty-trackers-hosts.txt
+# First-party trackers host list
+# Variant: first-party trackers
+# About first-party trackers: https://hostfiles.frogeye.fr/#whats-a-first-party-tracker
+# In case of false positives/negatives, or any other question,
+# contact me the way you like: https://geoffrey.frogeye.fr
+# Latest versions and variants: https://hostfiles.frogeye.fr/#list-variants
+# Source code: https://git.frogeye.fr/geoffrey/eulaurarien
+# License: https://git.frogeye.fr/geoffrey/eulaurarien/src/branch/master/LICENSE
+# Acknowledgements: https://hostfiles.frogeye.fr/#acknowledgements
+# Generation software: eulaurarien v3.0.0
+# List generation date: 2023-04-22T00:13:56+02:00
+# Oldest record: 2021-12-31T14:30:24+01:00
+# Number of source websites: 873
+# Number of source subdomains: 18981
+# Number of source DNS records: 18101
+# Input rules: asns: 6, zones: 48
+# Subsequent rules: asns: 6, hostnames: 14128, ip4s: 64, zones: 48
+# … no dupplicates: asns: 6, hostnames: 11897, zones: 48
+# Output rules: hostnames: 14128
+Info: Blocked 14128 domains
+
+URL: https://raw.githubusercontent.com/AssoEchap/stalkerware-indicators/master/generated/hosts
+# No head from source
+Info: Blocked 843 domains
+
+URL: https://zerodot1.gitlab.io/CoinBlockerLists/hosts_browser
+# Contribute: https://gitlab.com/ZeroDot1/CoinBlockerLists/issues/new
+# Copyright: (c) ZeroDot1, 2017 - 2021
+# Description: This list disables browser based miners such as coin-hive
+# Donate: https://zerodot1.gitlab.io/CoinBlockerListsWeb/donate.html Every donation keeps the future development going. Thank you.
+# Homepage: https://github.com/ZeroDot1/CoinBlockerLists/
+# Last modified: 2021-07-05 08:22:07
+# License: https://gitlab.io/ZeroDot1/CoinBlockerLists/LICENSE
+# [CoinBlocker hosts List optional by ZeroDot1]
+Info: Blocked 3496 domains
+
+URL: https://adaway.org/hosts.txt
+# AdAway default blocklist
+# Blocking mobile ad providers and some analytics providers
+# Project home page:
+# https://github.com/AdAway/adaway.github.io/
+# Fetch the latest version of this file:
+# https://raw.githubusercontent.com/AdAway/adaway.github.io/master/hosts.txt
+# License:
+# CC Attribution 3.0 (http://creativecommons.org/licenses/by/3.0/)
+# Contributions by:
+# Kicelo, Dominik Schuermann.
+# Further changes and contributors maintained in the commit history at
+# https://github.com/AdAway/adaway.github.io/commits/master
+# Contribute:
+# Create an issue at https://github.com/AdAway/adaway.github.io/issues
+# [163.com]
+Info: Blocked 7355 domains
+
+URL: https://osint.digitalside.it/Threat-Intel/lists/latestdomains.txt
+# No head from source
+Info: Blocked 55 domains
+
+URL: https://raw.githubusercontent.com/Spam404/lists/master/main-blacklist.txt
+# No head from source
+Info: Blocked 8145 domains
+
+URL: https://bitbucket.org/ethanr/dns-blacklists/raw/8575c9f96e5b4a1308f2f12394abd86d0927a4a0/bad_lists/Mandiant_APT1_Report_Appendix_D.txt
+# No head from source
+Info: Blocked 2046 domains
+
+URL: https://raw.githubusercontent.com/bigdargon/hostsVN/master/hosts
+# Title: hostsVN
+# Last modified: 21 Apr 2023 13:53 UTC+7
+# Version: 2304211353
+# Blocked: 17,786 domains
+# Please report any ads or problems on GitHub
+# Homepage: https://bigdargon.github.io/hostsVN/
+# GitHub: https://github.com/bigdargon/hostsVN
+# Report issues: https://github.com/bigdargon/hostsVN/issues
+# Download: https://github.com/bigdargon/hostsVN/raw/master/hosts
+# =====================================================
+# --- Group block ---
+#[apple]
+#[iadsdk.apple.com]
+Info: Blocked 17785 domains
+
+URL: https://gitlab.com/quidsup/notrack-blocklists/raw/master/notrack-blocklist.txt
+# Title: NoTrack Tracker Blocklist
+# Description: Domains classified as tracking or advertising
+# Author: QuidsUp
+# License: GNU General Public License v3.0
+# Home: https://quidsup.net/notrack/blocklist.php
+# @ GitLab : https://gitlab.com/quidsup/notrack-blocklists
+# Updated: 21 Apr 2023
+# LatestVersion 22.10
+# Domain Count: 16598
+#===============================================================
+Info: Blocked 16598 domains
+
+URL: https://gitlab.com/quidsup/notrack-blocklists/raw/master/notrack-malware.txt
+# Title: NoTrack Malware Blocklist
+# Description: Domains classified as malware, phishing or adware
+# Author: QuidsUp
+# License: GNU General Public License v3.0
+# Home: https://quidsup.net/notrack/blocklist.php
+# @ GitLab : https://gitlab.com/quidsup/notrack-blocklists
+# Updated: 21 Apr 2023
+# LatestVersion 22.10
+# Domain Count: 1127
+#===============================================================
+Info: Blocked 1127 domains
+
+URL: https://phishing.army/download/phishing_army_blocklist_extended.txt
+# 
+# Phishing Army | The Blocklist to filter Phishing 
+# 
+# Last Update: Fri, 21 Apr 2023 22:54:28 UTC
+# 
+# This is the extended version, also contains domains without subdomains.
+# 
+# Project website: https://phishing.army 
+# Support the project with a donation:: https://www.buymeacoffee.com/andreadraghetti 
+# 
+# This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License. 
+# ======================================================================================================
+Info: Blocked 152428 domains
+
+URL: https://raw.githubusercontent.com/chadmayfield/my-pihole-blocklists/master/lists/pi_blocklist_porn_top1m.list
+# No head from source
+Info: Blocked 11868 domains
+
+URL: https://v.firebog.net/hosts/Prigent-Ads.txt
+# Prigent-Ads, parsed and mirrored by https://firebog.net
+# Updated 19APR23 from https://dsi.ut-capitole.fr/blacklists/download/publicite.tar.gz
+# List corrections can be requested at https://dsi.ut-capitole.fr/cgi-bin/squidguard_modify.cgi
+Info: Blocked 3673 domains
+
+URL: https://v.firebog.net/hosts/Prigent-Crypto.txt
+# Prigent-Crypto, parsed and mirrored by https://firebog.net
+# Updated 19APR23 from https://dsi.ut-capitole.fr/blacklists/download/cryptojacking.tar.gz
+# List corrections can be requested at https://dsi.ut-capitole.fr/cgi-bin/squidguard_modify.cgi
+Info: Blocked 15885 domains
+
+URL: https://v.firebog.net/hosts/RPiList-Malware.txt
+# RPiList-Malware, parsed and mirrored by https://firebog.net
+# Updated 19APR23 from https://raw.githubusercontent.com/RPiList/specials/master/Blocklisten/malware
+# List corrections can be requested at https://github.com/RPiList/specials/issues
+Info: Blocked 104908 domains
+
+URL: https://v.firebog.net/hosts/RPiList-Phishing.txt
+# RPiList-Phishing, parsed and mirrored by https://firebog.net
+# Updated 19APR23 from https://raw.githubusercontent.com/RPiList/specials/master/Blocklisten/Phishing-Angriffe
+# List corrections can be requested at https://github.com/RPiList/specials/issues
+Info: Blocked 499225 domains
+
+URL: https://pgl.yoyo.org/adservers/serverlist.php?hostformat=hosts&showintro=0&mimetype=plaintext
+# Blocklist for use with hosts files to block ads, trackers, and other nasty things
+# For more information about this list, see: https://pgl.yoyo.org/adservers/
+# ----
+# last updated:   Sun, 16 Apr 2023 00:45:33 GMT
+# entries:        3746
+# format:         hosts (hosts -- in hosts file format)
+# credits:        Peter Lowe - pgl@yoyo.org - https://pgl.yoyo.org/ - https://twitter.com/pgl
+# this URL:       https://pgl.yoyo.org/adservers/serverlist.php?hostformat=hosts&showintro=0&mimetype=plaintext
+# Patreon:        https://patreon.com/blocklist
+# other formats:  https://pgl.yoyo.org/adservers/formats.php
+# policy:         https://pgl.yoyo.org/adservers/policy.php
+# start date:    Sun, 27 Apr 2003 00:00:00
+Info: Blocked 3746 domains
+
+URL: https://s3.amazonaws.com/lists.disconnect.me/simple_ad.txt
+# Ad filter list by Disconnect
+# License: GPLv3
+# Contact: support [at] disconnect.me
+Info: Blocked 2701 domains
+
+URL: https://s3.amazonaws.com/lists.disconnect.me/simple_malvertising.txt
+# License: GPLv3
+# Contact: support [at] disconnect.me
+Info: Blocked 2736 domains
+
+URL: https://raw.githubusercontent.com/Perflyst/PiHoleBlocklist/master/SmartTV.txt
+# Title: Smart-TV Blocklist for Pi-hole
+# Version: 6March2022v1
+# Description: This is a blocklist to block smart-TVs sending metadata back home, sometimes with the added benefit of blocking interface ads for apps and movie services.
+# Please help with collecting domains!
+# It could occur that the TV fails to receive new updates, or that other apps or services no longer work. Please report such an incident.
+# Make sure to also use the extra RegEx list at https://perflyst.github.io/PiHoleBlocklist/regex.list, which helps remove regional LG ad domains among other things.
+# Panasonic Viera & panny tv
+Info: Blocked 225 domains
+
+URL: https://raw.githubusercontent.com/crazy-max/WindowsSpyBlocker/master/data/hosts/spy.txt
+### WindowsSpyBlocker - Hosts spy rules
+### License: MIT
+### Updated: 2022-05-16T13:25:00Z02:12
+### Donate: https://github.com/sponsors/crazy-max ; https://www.paypal.me/crazyws
+### More info: https://github.com/crazy-max/WindowsSpyBlocker
+Info: Blocked 347 domains
+
+URL: https://unbound.oisd.nl/
+# Version: 202304220039
+# Description: Block. Don't break.
+# Title: oisd big
+# Last modified: 2023-04-22T00:39:33+0000
+# Expires: 1 days (update frequency)
+# Homepage: https://oisd.nl
+# Syntax: Unbound                                                                    
+Info: Blocked 285098 domains
+
