@@ -8,7 +8,8 @@ PFILE="$WORK_DIR/.proxy"
 [ -r "$PFILE" ] && PROXY="--proxy $(cat $PFILE)"
 [ ! -x /usr/bin/zst ] && echo "Error: Please install zst package" && exit
 #
-URL="https://raw.githubusercontent.com/LeisureLinux/adhole/main/data/adhole.conf.zst"
+URL="https://github.com/LeisureLinux/adhole/releases/download/adhole/adhole.conf.zst"
+
 CONF_DIR="/etc/unbound/adhole"
 CONF=$(basename $URL .zst)
 #
@@ -54,4 +55,4 @@ else
 	fi
 fi
 # [ -r $CONF_DIR/$CONF ] && mv $CONF_DIR/$CONF $CONF_DIR/$CONF.bak
-[ "$RELOAD" = "1" -a -x /usr/sbin/unbound-control ] && echo "Info: reloading unbound ..." && /usr/sbin/unbound-control reload
+# [ "$RELOAD" = "1" -a -x /usr/sbin/unbound-control ] && echo "Info: reloading unbound ..." && /usr/sbin/unbound-control reload
