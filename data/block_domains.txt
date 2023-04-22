@@ -2,5 +2,11 @@
 # !!! Comments must start with hash on first column
 # Add your own domains to block 
 # LeisureLinux is collecting own list found in honeypot
+# UpdateTime: 2023年 04月 22日 星期六 17:51:39 CST
 # Phishing
 exrnail.com
+grpyvex.cn
+co.za
+dweb.link
+bhre.sbs
+
