@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # Generate ADBlock list from different source in unbound local-zone format with "always_null"
 # Generate your own adblock list for your home LAN and
 # Contribute your block_domains.txt and unblock_domains.txt
@@ -179,7 +179,7 @@ EOH
 exclude_domain=$(grep -v "^#" $UNBLOCK_DOM | xargs | tr " " "|")
 # e.g. exclude_domain="as.weixin.qq.com|pandora.xiaomi.com|cm.bilibili.com"
 echo "Info: deduplicating ..."
-grep -v "0.0.0.0" $ZONE_TMP_FILE | sed -e 's/\."/"/g' | grep -E -v "$exclude_domain" | $SORT -u >>$ZONE_FILE
+time grep -v "0.0.0.0" $ZONE_TMP_FILE | sed -e 's/\."/"/g' | grep -E -v "$exclude_domain" | $SORT -u >>$ZONE_FILE
 rm $ZONE_TMP_FILE
 echo "Info: results after deduplication:"
 counts $ZONE_FILE
