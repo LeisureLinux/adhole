@@ -24,7 +24,7 @@ data/.cache
 adhole.conf.zst.old
 ```
      
-# Release: [adhole.conf.zst](https://raw.githubusercontent.com/LeisureLinux/adhole/main/data/adhole.conf.zst)
+# Release: [adhole.conf.zst](https://github.com/LeisureLinux/adhole/releases/download/adhole/adhole.conf.zst)
   - The **dynamic generated** list to be added in unbound DNS server
   - use zst -d adhole.conf.zst to decompress to your unbound config path
   - zst commands are from package: zst

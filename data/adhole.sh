@@ -12,14 +12,15 @@ SORT='parsort'
 [ ! -x /usr/bin/zst ] && echo "Error: to save space, please install zst package" && exit 1
 
 WORK_DIR=$(dirname $0)
+[ ! -d $WORK_DIR/result ] && mkdir $WORK_DIR/result
 PFILE="$WORK_DIR/../.proxy"
-[ -r "$PFILE" ] && PROXY="--proxy $(cat $PFILE)"
-# default cache dir to use ~/.cache/adhole
+[ -s "$PFILE" ] && PROXY="--proxy $(cat $PFILE)"
+# Default cache dir to use ~/.cache/adhole
 CACHE_DIR=$WORK_DIR/.cache
 [ -d $HOME/.cache ] && CACHE_DIR=$HOME/.cache/adhole
 [ ! -d $CACHE_DIR ] && mkdir -p $CACHE_DIR
 #
-ZONE_FILE=$WORK_DIR/adhole.conf
+ZONE_FILE=$WORK_DIR/result/adhole.conf
 BLOCK_URL=$WORK_DIR/block_urls.txt
 # the contents of the URL in the list are only domain names plaintext
 TEXT_URL=$WORK_DIR/text_urls.txt
@@ -29,7 +30,7 @@ UNBLOCK_DOM=$WORK_DIR/unblock_domains.txt
 ZONE_TMP_FILE=/tmp/$(basename $ZONE_FILE).tmp
 cat /dev/null >$ZONE_TMP_FILE
 #
-STATUS="$WORK_DIR/status"
+STATUS="$WORK_DIR/result/adhole.status"
 
 touch $ZONE_FILE.zst $BLOCK_URL $BLOCK_DOM $UNBLOCK_DOM $TMP_FILE $TEXT_URL
 
@@ -107,7 +108,6 @@ block() {
 }
 
 grab_oisd() {
-	# Todo: Add back to Main
 	AD_URL="https://unbound.oisd.nl/"
 	local fname=$(basename $AD_URL)
 	[ "$fname" = "hosts" ] && fname=$(echo "$AD_URL" | awk -F/ '{print $(NF - 1)}')".hosts"
@@ -128,7 +128,11 @@ grab_oisd() {
 }
 
 gen_status() {
-	cat /dev/null >$STATUS
+	echo "# =========================================" >$STATUS
+	echo "# LeisureLinux Adhole block domains sources " >>$STATUS
+	echo "# UpdateTime: $(date +"%Y-%m-%dT%H:%M:%S%z") " >>$STATUS
+	echo "# =========================================" >>$STATUS
+	echo "#" >>$STATUS
 	for s in $(ls -1 $CACHE_DIR/*.status); do
 		grep . "$s" >>$STATUS
 		echo >>$STATUS
@@ -148,17 +152,15 @@ for url in $(grep -v "^#" $BLOCK_URL); do
 	block $url
 done
 
-# use $0 -s to skip the big text urls
+# use $0 -s to skip the big text urls to avoid huge zone file on small SBC
 if [ "$1" != "-s" ]; then
 	for url in $(grep -v "^#" $TEXT_URL); do
 		block_text $url
 	done
 fi
 
-# Todo: add status file
 echo "Info: Add local block domain list ..."
 grep -v "^#" $BLOCK_DOM | awk '{print "local-zone: \"" $1 "\" always_null"}' >>$ZONE_TMP_FILE
-# counts $TMP_FILE
 #
 mv $ZONE_FILE.zst $ZONE_FILE.zst.old 2>/dev/null
 # Add head
