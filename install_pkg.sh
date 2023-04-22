@@ -9,10 +9,11 @@
 # 可能需要根据情况修改 PROXY 变量
 # PROXY="-x socks5h://127.0.0.1:2023"
 # 初始化 adhole 系统的版本
-VER="1.0.2"
+VER="1.1.2"
 # Packages to install on Debian/Ubuntu systems
-PKGS="vim curl python3 python3-pip nginx jq git shfmt netcat util-linux tree \
-    avahi-daemon nsd unbound xz-utils zst libpython3.9 bind9-dnsutils network-manager dos2unix"
+PKGS="vim curl python3 python3-pip nginx jq git shfmt netcat util-linux \
+    tree parallel avahi-daemon nsd unbound xz-utils zst libpython3.9 \
+    bind9-dnsutils network-manager dos2unix"
 # Modify to suit your own data
 TZONE="Asia/Shanghai"
 NTP="ntp.aliyun.com"
