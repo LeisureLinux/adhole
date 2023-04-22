@@ -172,7 +172,7 @@ EOH
 exclude_domain=$(grep -v "^#" $UNBLOCK_DOM | xargs | tr " " "|")
 # e.g. exclude_domain="as.weixin.qq.com|pandora.xiaomi.com|cm.bilibili.com"
 echo "Info: deduplicating ..."
-grep -v "0.0.0.0" $ZONE_TMP_FILE | sed -e 's/\."/"/g' | grep -E -v "$exclude_domain" | $SORT -u >$ZONE_FILE
+grep -v "0.0.0.0" $ZONE_TMP_FILE | sed -e 's/\."/"/g' | grep -E -v "$exclude_domain" | $SORT -u >>$ZONE_FILE
 rm $ZONE_TMP_FILE
 echo "Info: results after deduplication:"
 counts $ZONE_FILE
