@@ -15,6 +15,9 @@ WORK_DIR=$(dirname $0)
 [ ! -d $WORK_DIR/result ] && mkdir $WORK_DIR/result
 PFILE="$WORK_DIR/../.proxy"
 [ -s "$PFILE" ] && PROXY="--proxy $(cat $PFILE)"
+
+CURL="curl $PROXY $CURL_TIME --compressed -sSL"
+
 # Default cache dir to use ~/.cache/adhole
 CACHE_DIR=$WORK_DIR/.cache
 [ -d $HOME/.cache ] && CACHE_DIR=$HOME/.cache/adhole
@@ -64,7 +67,7 @@ block_text() {
 		return
 	fi
 	echo "Info: Grabbing $AD_URL to $TMP_FILE ..."
-	curl $PROXY $CURL_TIME -sSL $AD_URL >$TMP_FILE.curl
+	$CURL $AD_URL >$TMP_FILE.curl
 	[ $? != 0 ] && echo "Error: grab $AD_URL failed!" && return
 	echo "URL: $AD_URL" >$TMP_FILE.status
 	head -30 $TMP_FILE.curl | grep '^#' | grep -v "#$" | grep . >$TMP_FILE.head
@@ -94,7 +97,7 @@ block() {
 		return
 	fi
 	echo "Info: Grabbing $AD_URL to $TMP_FILE ..."
-	curl $PROXY $CURL_TIME -sSL $AD_URL >$TMP_FILE
+	$CURL $AD_URL >$TMP_FILE
 	[ $? != 0 ] && echo "Error: grab $AD_URL failed!" && return
 	# Pre-process, remove some IP address
 	grep -E -v '127.0.0.1|255.255.255|::' $TMP_FILE >$TMP_FILE.curl
@@ -109,6 +112,7 @@ block() {
 
 grab_oisd() {
 	AD_URL="https://unbound.oisd.nl/"
+	# curl -sS -L --compressed "http://pgl.yoyo.org/adservers/serverlist.php?hostformat=unbound&showintro=0&mimetype=plaintext"
 	local fname=$(basename $AD_URL)
 	[ "$fname" = "hosts" ] && fname=$(echo "$AD_URL" | awk -F/ '{print $(NF - 1)}')".hosts"
 	TMP_FILE=$CACHE_DIR/$(basename $AD_URL)
@@ -119,7 +123,7 @@ grab_oisd() {
 		return
 	fi
 	echo "Info: Grabbing $AD_URL to $TMP_FILE ..."
-	curl $PROXY $CURL_TIME -sSL $AD_URL -o $TMP_FILE
+	$CURL $AD_URL -o $TMP_FILE
 	[ $? != 0 ] && echo "Error: grab $AD_URL failed!" && return
 	echo "URL: $AD_URL" >$TMP_FILE.status
 	grep "^#" $TMP_FILE | grep . >>$TMP_FILE.status
