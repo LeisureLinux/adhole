@@ -99,10 +99,11 @@ block() {
 	grep -E -v '127.0.0.1|255.255.255|::' $TMP_FILE >$TMP_FILE.curl
 	echo "URL: $AD_URL" >$TMP_FILE.status
 	grab_0000_head $TMP_FILE.curl >>$TMP_FILE.status
-	grep '^0\.0\.0\.0' $TMP_FILE.curl | awk '{print "local-zone: \""$2"\" always_null\n"}' | grep -v "0.0.0.0" | grep . >$TMP_FILE
+	grep '^0\.0\.0\.0' $TMP_FILE.curl | awk '{print "local-zone: \""$2"\" always_null\n"}' | grep -v "0.0.0.0" >$TMP_FILE
 	counts $TMP_FILE | tee -a $TMP_FILE.status
 	rm $TMP_FILE.curl
 	cat $TMP_FILE >>$ZONE_TMP_FILE
+	echo >>$ZONE_TMP_FILE
 }
 
 grab_oisd() {
