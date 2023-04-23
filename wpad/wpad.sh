@@ -4,7 +4,9 @@
 # Normally people will have only one device in home LAN as wpad web server
 # here put the deivce IP to provide wpad service(Todo: check http://wpad/wpad.dat OK)
 HIP=$(hostname -I | awk '{print $1}')
-[ "$(dig -4 +short wpad. @localhost)" = "$HIP" ] && echo "Info: No need to update wpad. record" && exit 1
+if [ "$1" != "-f" ]; then
+  [ "$(dig -4 +short wpad. @localhost)" = "$HIP" ] && echo "Info: No need to update wpad. record" && exit 1
+fi
 [ ! -d /etc/unbound/adhole ] && mkdir -p /etc/unbound/adhole
 echo "Updating wpad.local. record ..."
 cat >/etc/unbound/adhole/wpad.conf <<EOW

@@ -6,15 +6,15 @@
 echo "Info: 本脚本需要 sudo 能力，检查当前用户是否具有 sudo 能力"
 sudo -nv 2>/dev/null
 [ $? != 0 ] && echo "Error: 当前用户没有 sudo 能力" && exit 1
+#
 cd $(dirname $0)
 
 deconfig() {
 	# Disable service and remove config files only, not removing packages
-	sudo systemctl status wpad.service 2>/dev/null
-	if [ $? = 0 ]; then
+	cat /dev/null|sudo tee /etc/unbound/adhole/wpad.conf
 		sudo systemctl --now disable wpad.service
 		sudo systemctl --now disable wpad.timer
-	fi
+		sudo systemctl restart unbound
 }
 
 # Main Prog.
@@ -30,7 +30,7 @@ HIP=$(hostname -I | awk '{print $1}')
 # curl http://wpad/wpad.dat OK
 # pactester google.com through proxy(Not DIRECT)
 sudo cp -f wpad.sh /etc/unbound
-sudo /etc/unbound/wpad.sh
+sudo /etc/unbound/wpad.sh -f
 [ $? != 0 ] && echo "Error: run wpad.sh failed!" && exit 7
 #
 echo "Info: Adding wpad timer ..."
