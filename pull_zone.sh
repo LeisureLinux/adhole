@@ -9,8 +9,9 @@ PFILE="$WORK_DIR/.proxy"
 #
 URL="https://github.com/LeisureLinux/adhole/releases/download/adhole/adhole.conf.zst"
 
+CONF="adhole.conf"
+STATUS="adhole.status"
 CONF_DIR="/etc/unbound/adhole"
-CONF=$(basename $URL .zst)
 #
 # Main Prog.
 # if exist $1 and readable, then just use the local file
@@ -24,6 +25,10 @@ else
 		echo "Info: downloading zone config $CONF.zst file from github ..."
 		curl -sSL $PROXY $URL -o /tmp/$CONF.zst
 		[ $? != 0 ] && echo "Error: Download $URL failed!" && exit 1
+		# grab status
+		curl -sSL $PROXY $(dirname $URL)/$STATUS -o /tmp/$STATUS
+		grep -v ^# /tmp/$STATUS | grep .
+		head -4 /tmp/$STATUS
 		echo "Info: Decompressing ..." && zst -ck \
 			-d /tmp/$CONF.zst >$CONF_DIR/$CONF && rm /tmp/$CONF.zst
 		RELOAD=1
