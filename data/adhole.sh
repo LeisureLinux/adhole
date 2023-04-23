@@ -150,11 +150,11 @@ if [ -n "$PROXY" ]; then
 	[ $? != 0 ] && echo "Error: Failed to check Google!" && exit 1
 fi
 
-# grab_oisd
+grab_oisd
 
-# for url in $(grep -v "^#" $BLOCK_URL); do
-#	block $url
-# done
+for url in $(grep -v "^#" $BLOCK_URL); do
+	block $url
+done
 
 # use $0 -s to skip the big text urls to avoid huge zone file on small SBC
 if [ "$1" != "-s" ]; then
