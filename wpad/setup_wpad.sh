@@ -11,10 +11,10 @@ cd $(dirname $0)
 
 deconfig() {
 	# Disable service and remove config files only, not removing packages
-	cat /dev/null|sudo tee /etc/unbound/adhole/wpad.conf
-		sudo systemctl --now disable wpad.service
-		sudo systemctl --now disable wpad.timer
-		sudo systemctl restart unbound
+	cat /dev/null | sudo tee /etc/unbound/adhole/wpad.conf
+	sudo systemctl --now disable wpad.service
+	sudo systemctl --now disable wpad.timer
+	sudo systemctl restart unbound
 }
 
 # Main Prog.
@@ -24,6 +24,7 @@ deconfig() {
 IFS=
 HIP=$(hostname -I | awk '{print $1}')
 [ -z "$HIP" ] && echo "Error: get IP address failed!" && exit 5
+# Todo:
 # check unbound service exist
 # check nginx service started
 # add wpad record
