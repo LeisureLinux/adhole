@@ -150,11 +150,11 @@ if [ -n "$PROXY" ]; then
 	[ $? != 0 ] && echo "Error: Failed to check Google!" && exit 1
 fi
 
-grab_oisd
+# grab_oisd
 
-for url in $(grep -v "^#" $BLOCK_URL); do
-	block $url
-done
+# for url in $(grep -v "^#" $BLOCK_URL); do
+#	block $url
+# done
 
 # use $0 -s to skip the big text urls to avoid huge zone file on small SBC
 if [ "$1" != "-s" ]; then
@@ -164,7 +164,7 @@ if [ "$1" != "-s" ]; then
 fi
 
 echo "Info: Add local block domain list ..."
-grep -v "^#" $BLOCK_DOM | awk '{print "local-zone: \"" $1 "\" always_null"}' >>$ZONE_TMP_FILE
+grep -v "^#" $BLOCK_DOM | grep . | awk '{print "local-zone: \"" $1 "\" always_null"}' >>$ZONE_TMP_FILE
 #
 mv $ZONE_FILE.zst $ZONE_FILE.zst.old 2>/dev/null
 # Add head
