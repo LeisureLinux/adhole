@@ -2,7 +2,6 @@
 # Run as root cron
 # pull the latest adhole.conf.zst from github
 # put your proxy server e.g. http://IP:port or socks5://IP:port to .proxy
-# touch a .wpad file in your env. to tell unbound add wpad record after zone reload
 WORK_DIR=$(dirname $0)
 PFILE="$WORK_DIR/.proxy"
 [ -r "$PFILE" ] && PROXY="--proxy $(cat $PFILE)"
@@ -13,28 +12,7 @@ URL="https://github.com/LeisureLinux/adhole/releases/download/adhole/adhole.conf
 CONF_DIR="/etc/unbound/adhole"
 CONF=$(basename $URL .zst)
 #
-add_wpad() {
-	# write wpad.conf
-	HIP=$(hostname -I | awk '{print $1}')
-	[ "$(dig -4 +short wpad. @localhost)" = "$HIP" ] && echo "Info: No need to \
-update wpad. record" && return
-	echo "Adding wpad.local. record ..."
-	# sudo unbound-control local_data wpad. A $HIP
-	# sudo unbound-control local_data wpad.local. A $HIP
-	cat >/etc/unbound/adhole/wpad.conf <<EOW
-local-zone: "wpad." transparent
-local-zone: "wpad.local." transparent
-local-data: "wpad. IN A $HIP"
-local-data: "wpad.local. IN A $HIP"
-EOW
-	RELOAD=1
-	# [ $? != 0 ] && echo "Error: not able to update wpad. record!" && exit 6
-	# [ "$(dig -4 +short wpad.local. @localhost)" != "$HIP" ] && echo "Error: added wpad not able to resolv!" && exit 7
-	# echo "Congrats, All is well! Added wpad. as $HIP"
-}
-
 # Main Prog.
-add_wpad
 # if exist $1 and readable, then just use the local file
 if [ -r "$1" ]; then
 	echo "Info: reading $1 and decompressing ... "

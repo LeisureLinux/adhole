@@ -6,7 +6,7 @@ After=unbound.service
 
 [Service]
 ExecStart=/etc/unbound/wpad.sh
-# Restart=always
+Restart=always
 # RestartSec=0
 
 [Install]
