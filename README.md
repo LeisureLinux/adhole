@@ -12,11 +12,17 @@ Adhole, a lightweight [pi-hole](https://github.com/pi-hole/pi-hole) without mana
   1. Run ./install_pkg.sh to install the packages
   2. Run ./setup_dns.sh to setup the config files to enable/start DNS server
   3. Add ./pull_zone.sh to root crontab to pull adhole.conf daily from github and reload zone
-  4. Run ./wpad.sh if you want to make WPAD(Web Proxy Auto-Discovery) work in your LAN, which will need to add wpad record dynamically in DHCP environment
 
 # Service and Ports
   - nsd service slave root zone from Internet, run on 127.0.0.1:1053
   - unbound service listen on 0.0.0.0:53 forward all to nsd, except those configured as local-zone
+ 
+# WPAD (Web Proxy Auto-Discovery)
+  - run setup_wpad.sh to add the wpad.service and wpad.timer to check wpad
+    record every 10 min.
+  - Why WPAD: if you have multiple devices in home, and switch on/off VPN is
+    tedius, just setup the device network setting's proxy as auto, the auto proxy URL is
+    http://wpad.local/wpad.dat in case you need to add it manully(On iOS this is not needed)
   
 # Zone config data
   - Contribute your own unblock_domains.txt and block_domains.txt, Request PR.
