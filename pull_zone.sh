@@ -22,8 +22,8 @@ if [ -r "$1" ]; then
 	RELOAD=1
 else
 	if [ ! -r $CONF_DIR/$CONF -o "$(find $CONF_DIR/$CONF -mtime +0 2>/dev/null)" ]; then
-		echo "Info: downloading zone config $CONF.zst file from github ..."
-		curl -sSL $PROXY $URL -o /tmp/$CONF.zst
+		echo "Info: Downloading zone config $CONF.zst file from github ..."
+		curl -SL $PROXY $URL -o /tmp/$CONF.zst
 		[ $? != 0 ] && echo "Error: Download $URL failed!" && exit 1
 		# grab status
 		curl -sSL $PROXY $(dirname $URL)/$STATUS -o /tmp/$STATUS
