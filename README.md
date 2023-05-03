@@ -11,29 +11,46 @@ Adhole, a lightweight [pi-hole](https://github.com/pi-hole/pi-hole) without mana
 # Quick-start with qcow2 VM image if on a Linux machine(no need to run other steps)
   1. Download qcow2 image
      [here](https://github.com/LeisureLinux/adhole/releases/download/adhole/adhole-01.qcow2.zst)
-  2. Import qcow2 image:
-```
-  virt-install --vcpu 1 --memory 2048 --name your_VM_name \
-   --osinfo detect=on,name=generic --network your_networkname \
-   --noautoconsole --import --disk your_path_to_adhole-01.qcow2 \
-   --cloud-init clouduser-ssh-key=your_ssh_pubkey
-```
-  3. Debug import process:
-```
-  # Check console output
-  virsh console your_VM_name
-  # Check VM's IP address
-  virsh net-dhcp-leases default
-```
-  4. ssh debian@IP_Address (if your host running avahi-daemon, just login
-     with password-less as: ssh debian@adhole-01.local)
-  5. run ss -tln to check port 53 and port 1053 is up, and run validate resolver
-     with:
+  2. Decompress with: zstd -d adhole-01.qcow2.zst 
+  3. Import qcow2 image:
      ```
-       # will return IP address of www.baidu.com
-       dig +short -4 www.baidu.com
+       virt-install --vcpu 1 --memory 2048 --name your_VM_name \
+        --osinfo detect=on,name=generic --network your_networkname \
+        --noautoconsole --import --disk your_path_to_adhole-01.qcow2 \
+        --cloud-init clouduser-ssh-key=your_ssh_pubkey
      ```
- 
+  4. Debug import process:
+     ```
+       # Check console output, try login with root/LeisureLinux
+       virsh console your_VM_name
+       # Check VM's IP address
+       virsh net-dhcp-leases default
+     ```
+  5. Check account "debian":
+     ```
+      ssh debian@IP_Address 
+      # if your host running avahi-daemon, just use
+      ssh debian@adhole-01.local
+      # if want to assign your own password(password login disabled by default)
+      sudo -s
+      passwd debian
+     ```
+  6. Network port check
+     ```
+      # check port 53 and port 1053 is up
+      ss -tln 
+      # will return IP address of www.baidu.com
+      dig +short -4 www.baidu.com @localhost
+     ```
+  7. Appendix: How to generate/publish qcow2?
+     ```
+      rm ~debian/.ssh/*
+      passwd root (assign a password you can share to world)
+      apt clean && apt autoclean
+      rm /var/log/*.log
+      cloud-init clean
+     ```
+     
 # nsd+unbound install/setup steps(as root on a bare debian OS)
   1. Run ./install_pkg.sh to install the packages
   2. Run ./setup_dns.sh to setup the config files to enable/start DNS server
