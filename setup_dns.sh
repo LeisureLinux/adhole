@@ -40,10 +40,10 @@ sudo cp -f conf/nsd.conf /etc/nsd
 sudo cp -f conf/unbound.conf /etc/unbound
 echo "Info: Enabling nsd and unbound service ..."
 sudo systemctl enable nsd
-sudo systemctl start nsd
+sudo systemctl restart nsd
 [ $? != 0 ] && echo "Error: restart nsd service failed" && exit 2
 sudo systemctl enable unbound
-sudo systemctl start unbound
+sudo systemctl restart unbound
 [ $? != 0 ] && echo "Error: restart unbound service failed" && exit 3
 sleep 5
 echo "Info: resolving www.baidu.com to validate dns server ..."

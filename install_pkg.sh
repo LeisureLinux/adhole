@@ -77,6 +77,9 @@ base_line() {
 nameserver 127.0.0.1
 EOH
 	sudo systemctl --now disable ModemManager
+	sudo systemctl --now disable wpa_supplicant
+	sudo systemctl --now disable nsd
+	sudo systemctl --now disable unbound
 	sudo systemctl enable NetworkManager
 	sudo systemctl restart NetworkManager
 	[ $? != 0 ] && echo "Error: Failed to start NetworkManager" && exit 1

@@ -5,7 +5,7 @@
 WORK_DIR=$(dirname $0)
 PFILE="$WORK_DIR/.proxy"
 [ -r "$PFILE" ] && PROXY="--proxy $(cat $PFILE)"
-[ ! -x /usr/bin/zst ] && echo "Error: Please install zst package" && exit
+[ ! -x /usr/bin/zstd ] && echo "Error: Please install zstd package" && exit
 #
 URL="https://github.com/LeisureLinux/adhole/releases/download/adhole/adhole.conf.zst"
 
@@ -18,7 +18,7 @@ CONF_DIR="/etc/unbound/adhole"
 if [ -r "$1" ]; then
 	echo "Info: reading $1 and decompressing ... "
 	sudo cp $1 /etc/unbound/adhole
-	sudo zst -f -d /etc/unbound/adhole/$(basename $1)
+	sudo zstd -f -d /etc/unbound/adhole/$(basename $1)
 	RELOAD=1
 else
 	if [ ! -r $CONF_DIR/$CONF -o "$(find $CONF_DIR/$CONF -mtime +0 2>/dev/null)" ]; then
@@ -29,7 +29,7 @@ else
 		curl -sSL $PROXY $(dirname $URL)/$STATUS -o /tmp/$STATUS
 		grep -v ^# /tmp/$STATUS | grep .
 		head -4 /tmp/$STATUS
-		echo "Info: Decompressing ..." && zst -ck \
+		echo "Info: Decompressing ..." && zstd -ck \
 			-d /tmp/$CONF.zst >$CONF_DIR/$CONF && rm /tmp/$CONF.zst
 		RELOAD=1
 	else
