@@ -10,7 +10,7 @@ Adhole, a lightweight [pi-hole](https://github.com/pi-hole/pi-hole) without mana
 
 # Quick-start with qcow2 VM image if on a Linux machine(no need to run other steps)
   1. Download qcow2 image
-     [here](https://github.com/LeisureLinux/adhole/releases/download/adhole/adhole-01.qcow2.zst)
+     [here](https://github.com/LeisureLinux/adhole/releases/download/adhole/adhole-1.1.5_amd64.qcow2.zst)
   2. Decompress with: zstd -d adhole-01.qcow2.zst 
   3. Import qcow2 image:
      ```
