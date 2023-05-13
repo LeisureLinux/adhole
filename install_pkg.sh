@@ -15,7 +15,7 @@ VER="1.1.5"
 # added libpacparser1 to check wpad proxy setup
 PKGS="vim psmisc curl python3 python3-pip nginx jq git netcat util-linux \
     tree parallel avahi-daemon nsd unbound xz-utils lsof zstd libpython3.9 \
-    bind9-dnsutils network-manager dos2unix libpacparser1"
+    bind9-dnsutils network-manager dos2unix libpacparser1 systemd_timesyncd"
 # Modify to suit your own data
 TZONE="Asia/Shanghai"
 NTP="ntp.aliyun.com"
