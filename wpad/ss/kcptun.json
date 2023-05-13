@@ -1,0 +1,17 @@
+{
+  "localaddr": "0.0.0.0:your_local_port",
+  "remoteaddr": "your_remote_hostname_or_ip:port"
+  "key": "the_key_you_set_at_server_side",
+  "crypt": "aes-128",
+  "mode": "fast",
+  "mtu": 1350,
+  "sndwnd": 1024,
+  "rcvwnd": 1024,
+  "datashard": 10,
+  "parityshard": 3,
+  "dscp": 0,
+  "nocomp": true,
+  "quiet": false,
+  "tcp": false,
+  "log": "/var/log/kcptun-local.log"
+}

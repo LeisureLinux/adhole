@@ -1,0 +1,12 @@
+{
+    "server":"127.0.0.1",
+    "mode":"tcp_and_udp",
+    "server_port":your_local_ss_port,
+    "password":"Your_ss_password_set_at_server_side",
+    "method":"aes-256-cfb",
+    "local_address":"0.0.0.0",
+    "local_port":your_local_port_can_be_served_as_socks5,
+    "timeout":300,
+    "fast_open":true,
+    "shareOverLan": true
+}
