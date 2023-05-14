@@ -16,8 +16,8 @@ Adhole, a lightweight [pi-hole](https://github.com/pi-hole/pi-hole) without mana
   5. 新建一个虚机，名字随便取，操作系统选择 Linux/Debian11 64bit，网络必须选择“桥接”模式（默认为 NAT），内存选 1024M，处理器设置为 1 即可。
   6. 虚拟机操作系统的主机名为 adhole-18，登录用户名为 adhole，在开启了
      avahi-daemon 的 Linux 机器， 或者 macOS 上可以直接在命令行用 ssh
-     adhole@adhole-18.local 登录系统。
-  7. 登录后，可以 sudo -s 成为超级用户， cd /root/adhole，运行 ./pull_zone.sh 拉取最新的 zone 文件
+     adhole@adhole-18.local 登录系统，密码是短的主机名。
+  7. 登录后，可以 sudo -s 成为超级用户， git clone；cd /root/adhole，运行 ./pull_zone.sh 拉取最新的 zone 文件
   8. 如果已经有内网代理的话， echo "http://proxy-ip:port/" > /root/adhole/.proxy 
   9. 验证：把 Windows 机器或者家里无线路由器的 DNS 地址，设置为这台虚机的 IP 地址，看是否能解析 www.baidu.com
       ```
