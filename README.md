@@ -29,6 +29,12 @@ Adhole, a lightweight [pi-hole](https://github.com/pi-hole/pi-hole) without mana
        - 输入 a.baidu.com （应该返回 0.0.0.0，表明 adhole 已经生效）
        - exit
       ```
+  10. 如何不通过 console 登录就能查看到虚拟机的 IP 地址？
+        - Windows 主机上运行 arp -a 命令，查看虚机网卡 mac 地址下对应的 IP 地址
+        - 登录到无线路由器上，去查看 DHCP 客户端的地址
+        - 在 Windows 主机上安装 Advanced IP Scanner 程序，扫描本机网段
+  11. 又：实际上不设置为 Bridge 也是可以的，如果是 NAT 模式，无非就是再添加端口转发，把 UDP 53 端口，转发到虚机的 UDP 53 端口
+      
  
 # Quick-start with qcow2 VM image if on a Linux machine(no need to run other steps)
   1. Download qcow2 image
