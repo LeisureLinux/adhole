@@ -8,6 +8,8 @@ Adhole, a lightweight [pi-hole](https://github.com/pi-hole/pi-hole) without mana
   4. Plugin your board into Wi-Fi router, bind your board MAC address to a static IP on your router's DHCP setting(preferred)
   5. After successfully setup the board according to below steps, point your Wi-Fi router's LAN DHCP config's DNS server to the board's IP
  
+# Using a minimum x86_64 alpine netboot VM: Just [one script](https://github.com/LeisureLinux/bilibili/blob/master/scripts/adhole.sh) to build a libvirt VM.
+  
 # Windows 上使用 VirtualBox 挂接 vdi 虚机镜像，测试效果
   1. [下载镜像](https://github.com/LeisureLinux/adhole/releases/download/adhole/adhole-18.vdi.zip)
   2. 解压，如果有移动需求，可以把解压后的 .vdi 文件复制到 U盘
@@ -93,7 +95,7 @@ Adhole, a lightweight [pi-hole](https://github.com/pi-hole/pi-hole) without mana
     record every 10 min.
   - Why WPAD: if you have multiple devices in home, and switch on/off VPN is
     tedius, just setup the device network setting's proxy as auto, the auto proxy URL is
-    http://wpad.local/wpad.dat in case you need to add it manully(On iOS this is not needed)
+    http://wpad.local/wpad.dat in case you need to add it manually(On iOS this is not needed)
   
 # Zone config data
   - Contribute your own unblock_domains.txt and block_domains.txt, Request PR.

@@ -2,7 +2,7 @@
 # placed this file as /etc/unbound/wpad.sh and will called as service
 # Update wpad record, this need to to dynamically since IP could be changed
 # Normally people will have only one device in home LAN as wpad web server
-# here put the deivce IP to provide wpad service(Todo: check http://wpad/wpad.dat OK)
+# here put the device IP to provide wpad service(Todo: check http://wpad/wpad.dat OK)
 HIP=$(hostname -I | awk '{print $1}')
 if [ "$1" != "-f" ]; then
 	[ "$(dig -4 +short wpad. @localhost)" = "$HIP" ] && echo "Info: No need to update wpad. record" && exit 1
