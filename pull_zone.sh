@@ -30,10 +30,10 @@ else
 		grep -v ^# /tmp/$STATUS | grep .
 		head -4 /tmp/$STATUS
 		echo "Info: Decompressing ..." && zstd -ck \
-			-d /tmp/$CONF.zst >$CONF_DIR/$CONF && rm /tmp/$CONF.zst
+			-d /tmp/$CONF.zst |sudo tee $CONF_DIR/$CONF && rm /tmp/$CONF.zst
 		RELOAD=1
 	else
 		echo "Info: $CONF is not expired yet."
 	fi
 fi
-[ "$RELOAD" = "1" -a -x /usr/sbin/unbound-control ] && echo "Info: reloading unbound ..." && /usr/sbin/unbound-control reload
+[ "$RELOAD" = "1" -a -x /usr/sbin/unbound-control ] && echo "Info: reloading unbound ..." && sudo /usr/sbin/unbound-control reload
