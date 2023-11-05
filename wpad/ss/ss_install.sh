@@ -43,7 +43,8 @@ KCP_CFG="kcptun.json"
 SS_CFG="ss.json"
 [ -z "$1" ] && chk_pkg
 [ -z "$1" ] && ss_cfg
-PRX_PORT=$(cat $SS_CFG | jq -r .local_port)
+PRX_PORT=$(cat $SS_CFG | jq -r ".local_port")
+[ -z "$PRX_PORT" ] && echo "Error: Missing proxy port number" && exit 1
 echo "Info: proxy port: $PRX_PORT"
 ###########################
 # Functions
@@ -134,7 +135,7 @@ install_goproxy() {
 	# Install Goproxy to convert socks5 to http proxy
 	[ -x "/usr/local/bin/goproxy" ] && return
 	echo "Info: Checking github goproxy version ..."
-	sudo git config --global http.proxy 'socks5h://127.0.0.1:$PRX_PORT'
+	sudo git config --global http.proxy "socks5h://127.0.0.1:$PRX_PORT"
 	VER=$(git -c 'versionsort.suffix=-' ls-remote --tags --sort='v:refname' https://github.com/snail007/goproxy.git | tail -1 | awk -F/ '{print $NF}')
 	sudo git config --global http.proxy ''
 	[ -z "$VER" ] && echo "Error: get goproxy version failed!" && exit 4
@@ -295,7 +296,7 @@ if [ -z "$(sudo pip3 config --user get global.index | grep sjtu)" ]; then
 	sudo pip3 config --user set global.index-url https://mirror.sjtu.edu.cn/pypi/web/simple/
 	sudo pip3 config --user set global.trusted-host mirror.sjtu.edu.cn
 fi
-[ ! -x "/usr/local/bin/genpac" ] && sudo pip3 install genpac
+[ ! -x "/usr/local/bin/genpac" ] && sudo pip3 install genpac --break-system-packages
 #
 gen_wpad
 
