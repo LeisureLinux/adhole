@@ -203,3 +203,4 @@ else
 	gen_status
 	"${WORK_DIR}"/gh-upload.sh
 fi
+rm /tmp/check.conf
