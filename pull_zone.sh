@@ -1,9 +1,9 @@
 #!/bin/sh
 # Run as root cron
 # pull the latest adhole.conf.zst from github
-# put your proxy server e.g. http://IP:port or socks5://IP:port to .proxy
+# put your proxy server e.g. http://IP:port or socks5://IP:port to ~/.proxy
 WORK_DIR=$(dirname $0)
-PFILE="$WORK_DIR/.proxy"
+PFILE="$HOME/.proxy"
 [ -r "$PFILE" ] && PROXY="--proxy $(cat $PFILE)" || echo "设置代理服务器能加速从 github 拉取 zone 文件的速度"
 [ ! -x /usr/bin/zstd ] && echo "Error: Please install zstd package" && exit
 #
@@ -30,7 +30,7 @@ else
 		grep -v ^# /tmp/$STATUS | grep .
 		head -4 /tmp/$STATUS
 		echo "Info: Decompressing ..." && zstd -ck \
-			-d /tmp/$CONF.zst |sudo tee $CONF_DIR/$CONF && rm /tmp/$CONF.zst
+			-d /tmp/$CONF.zst | sudo tee $CONF_DIR/$CONF && rm /tmp/$CONF.zst
 		RELOAD=1
 	else
 		echo "Info: $CONF is not expired yet."
