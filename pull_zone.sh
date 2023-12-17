@@ -17,16 +17,18 @@ CONF_DIR="/etc/unbound/adhole"
 # if exist $1 and readable, then just use the local file
 if [ -r "$1" ]; then
 	echo "Info: reading $1 and decompressing ... "
-	sudo cp $1 /etc/unbound/adhole
-	sudo zstd -f -d /etc/unbound/adhole/$(basename $1)
+	sudo cp "$1" /etc/unbound/adhole
+	sudo zstd -f -d /etc/unbound/adhole/"$(basename "$1")"
 	RELOAD=1
 else
-	if [ ! -r $CONF_DIR/$CONF -o "$(find $CONF_DIR/$CONF -mtime +0 2>/dev/null)" ]; then
+	if [ ! -r $CONF_DIR/$CONF ] || [ "$(find $CONF_DIR/$CONF -mtime +1 2>/dev/null)" ]; then
 		echo "Info: Downloading zone config $CONF.zst file from github ..."
-		curl -SL $PROXY $URL -o /tmp/$CONF.zst
-		[ $? != 0 ] && echo "Error: Download $URL failed!" && exit 1
+		if ! curl -SL "$PROXY" "$URL" -o "/tmp/$CONF.zst"; then
+			echo "Error: Download $URL failed!"
+			exit 1
+		fi
 		# grab status
-		curl -sSL $PROXY $(dirname $URL)/$STATUS -o /tmp/$STATUS
+		curl -sSL "$PROXY" "$(dirname $URL)/$STATUS" -o "/tmp/$STATUS"
 		grep -v ^# /tmp/$STATUS | grep .
 		head -4 /tmp/$STATUS
 		echo "Info: Decompressing ..." && zstd -ck \
@@ -36,4 +38,4 @@ else
 		echo "Info: $CONF is not expired yet."
 	fi
 fi
-[ "$RELOAD" = "1" -a -x /usr/sbin/unbound-control ] && echo "Info: reloading unbound ..." && sudo /usr/sbin/unbound-control reload
+[ "$RELOAD" = "1" ] && [ -x /usr/sbin/unbound-control ] && echo "Info: reloading unbound ..." && sudo /usr/sbin/unbound-control reload
