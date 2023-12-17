@@ -11,8 +11,9 @@ URL="https://github.com/LeisureLinux/adhole/releases/download/adhole/adhole.conf
 DAYS=7
 #
 CONF="adhole.conf"
-STATUS="adhole.status"
+STATUS="adhole_status.txt"
 CONF_DIR="/etc/unbound/adhole"
+CURL="curl -SL $PROXY"
 #
 # Main Prog.
 # if exist $1 and readable, then just use the local file
@@ -24,13 +25,13 @@ if [ -r "$1" ]; then
 else
 	if [ ! -r $CONF_DIR/$CONF ] || [ "$(find $CONF_DIR/$CONF -mtime +"$DAYS" 2>/dev/null)" ]; then
 		echo "Info: Downloading zone config $CONF.zst file from github ..."
-		if ! curl -SL "$PROXY" "$URL" -o "/tmp/$CONF.zst"; then
+		if ! $CURL "$URL" -o "/tmp/$CONF.zst"; then
 			echo "Error: Download $URL failed!"
 			exit 1
 		fi
 		# grab status
-		curl -sSL "$PROXY" "$(dirname $URL)/$STATUS" -o "/tmp/$STATUS"
-		# grep -v ^# /tmp/$STATUS | grep .
+		$CURL "$(dirname $URL)/$STATUS" -o "/tmp/$STATUS"
+		grep -v ^# /tmp/$STATUS | grep .
 		head -4 /tmp/$STATUS
 		echo "Info: Decompressing ..." && zstd -ck \
 			-d /tmp/$CONF.zst | sudo tee $CONF_DIR/$CONF && rm /tmp/$CONF.zst
