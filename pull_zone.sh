@@ -34,9 +34,9 @@ else
         $CURL "$(dirname $URL)/$STATUS" -o "/tmp/$STATUS"
         grep -v ^# /tmp/$STATUS | grep .
         head -4 /tmp/$STATUS
-        echo "Info: Decompressing ..." && zstd -ck \
-            -d /tmp/$CONF.zst | sudo tee $CONF_DIR/$CONF && rm /tmp/$CONF.zst
-        RELOAD=1
+        echo "Info: Decompressing ..." 
+	zstd -d /tmp/$CONF.zst && sudo mv /tmp/$CONF $CONF_DIR/$CONF && RELOAD=1
+	#| sudo tee $CONF_DIR/$CONF && rm /tmp/$CONF.zst
     else
         echo "Info: $CONF is not expired yet, need $DAYS days to expire to avoid reload zone too frequently."
     fi
