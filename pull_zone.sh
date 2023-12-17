@@ -13,31 +13,32 @@ DAYS=7
 CONF="adhole.conf"
 STATUS="adhole_status.txt"
 CONF_DIR="/etc/unbound/adhole"
-CURL="curl -SL $PROXY"
+#
+CURL="/usr/bin/curl -SL $PROXY"
 #
 # Main Prog.
 # if exist $1 and readable, then just use the local file
 if [ -r "$1" ]; then
-	echo "Info: reading $1 and decompressing ... "
-	sudo cp "$1" /etc/unbound/adhole
-	sudo zstd -f -d /etc/unbound/adhole/"$(basename "$1")"
-	RELOAD=1
+    echo "Info: reading $1 and decompressing ... "
+    sudo cp "$1" /etc/unbound/adhole
+    sudo zstd -f -d /etc/unbound/adhole/"$(basename "$1")"
+    RELOAD=1
 else
-	if [ ! -r $CONF_DIR/$CONF ] || [ "$(find $CONF_DIR/$CONF -mtime +"$DAYS" 2>/dev/null)" ]; then
-		echo "Info: Downloading zone config $CONF.zst file from github ..."
-		if ! $CURL "$URL" -o "/tmp/$CONF.zst"; then
-			echo "Error: Download $URL failed!"
-			exit 1
-		fi
-		# grab status
-		$CURL "$(dirname $URL)/$STATUS" -o "/tmp/$STATUS"
-		grep -v ^# /tmp/$STATUS | grep .
-		head -4 /tmp/$STATUS
-		echo "Info: Decompressing ..." && zstd -ck \
-			-d /tmp/$CONF.zst | sudo tee $CONF_DIR/$CONF && rm /tmp/$CONF.zst
-		RELOAD=1
-	else
-		echo "Info: $CONF is not expired yet, need $DAYS days to expire to avoid reload zone too frequently."
-	fi
+    if [ ! -r $CONF_DIR/$CONF ] || [ "$(find $CONF_DIR/$CONF -mtime +"$DAYS" 2>/dev/null)" ]; then
+        echo "Info: Downloading zone config $CONF.zst file from github ..."
+        if ! $CURL "$URL" -o "/tmp/$CONF.zst"; then
+            echo "Error: Download $URL failed!"
+            exit 1
+        fi
+        # grab status
+        $CURL "$(dirname $URL)/$STATUS" -o "/tmp/$STATUS"
+        grep -v ^# /tmp/$STATUS | grep .
+        head -4 /tmp/$STATUS
+        echo "Info: Decompressing ..." && zstd -ck \
+            -d /tmp/$CONF.zst | sudo tee $CONF_DIR/$CONF && rm /tmp/$CONF.zst
+        RELOAD=1
+    else
+        echo "Info: $CONF is not expired yet, need $DAYS days to expire to avoid reload zone too frequently."
+    fi
 fi
 [ "$RELOAD" = "1" ] && [ -x /usr/sbin/unbound-control ] && echo "Info: reloading unbound ..." && sudo /usr/sbin/unbound-control reload
