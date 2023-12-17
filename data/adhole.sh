@@ -75,13 +75,13 @@ block_text() {
 	rm "$TMP_FILE".head
 
 	# remove IPs in the list with grep -vP
-	grep -v "^#" $TMP_FILE.curl | dos2unix -k \
+	grep -v "^#" "$TMP_FILE".curl | dos2unix -k \
 		-q | sed 's/^0\.0\.0\.0 //g' | sed 's/^127\.0\.0\.1 //g' | grep \
 		. | grep -vP '\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b' | grep -v \
-		"localhost" | awk '{print "local-zone: \""$1"\" always_null\n"}' | grep . >$TMP_FILE
-	counts $TMP_FILE | tee -a $TMP_FILE.status
-	rm $TMP_FILE.curl
-	cat $TMP_FILE >>$ZONE_TMP_FILE
+		"localhost" | sed -e 's/||//g' -e 's/\^//g' | awk '{print "local-zone: \""$1"\" always_null\n"}' | grep . >"$TMP_FILE"
+	counts "$TMP_FILE" | tee -a "$TMP_FILE.status"
+	rm "$TMP_FILE.curl"
+	cat "$TMP_FILE" >>"$ZONE_TMP_FILE"
 }
 
 block() {
@@ -91,24 +91,25 @@ block() {
 	fname=$(basename "$AD_URL")
 	[ "$fname" = "hosts" ] && fname=$(echo "$AD_URL" | awk -F/ '{print $(NF - 1)}')".hosts"
 	TMP_FILE=$CACHE_DIR/$fname
-	file_age $TMP_FILE.status
-	if [ $? = 0 ]; then
+	if file_age "$TMP_FILE".status; then
 		echo "Info: no need to grab $AD_URL"
-		[ -r "$TMP_FILE" ] && cat $TMP_FILE >>$ZONE_TMP_FILE
+		[ -r "$TMP_FILE" ] && cat "$TMP_FILE" >>"$ZONE_TMP_FILE"
 		return
 	fi
 	echo "Info: Grabbing $AD_URL to $TMP_FILE ..."
-	$CURL $AD_URL >$TMP_FILE
-	[ $? != 0 ] && echo "Error: grab $AD_URL failed!" && return
+	if ! $CURL "$AD_URL" >"$TMP_FILE"; then
+		# 	[ $? != 0 ] &&
+		echo "Error: grab $AD_URL failed!" && return
+	fi
 	# Pre-process, remove some IP address
-	grep -E -v '127.0.0.1|255.255.255|::' $TMP_FILE >$TMP_FILE.curl
-	echo "URL: $AD_URL" >$TMP_FILE.status
-	grab_0000_head $TMP_FILE.curl >>$TMP_FILE.status
-	grep '^0\.0\.0\.0' $TMP_FILE.curl | awk '{print "local-zone: \""$2"\" always_null\n"}' | grep -v "0.0.0.0" >$TMP_FILE
-	counts $TMP_FILE | tee -a $TMP_FILE.status
-	rm $TMP_FILE.curl
-	cat $TMP_FILE >>$ZONE_TMP_FILE
-	echo >>$ZONE_TMP_FILE
+	grep -E -v '127.0.0.1|255.255.255|::' "$TMP_FILE" >"$TMP_FILE".curl
+	echo "URL: $AD_URL" >"$TMP_FILE".status
+	grab_0000_head "$TMP_FILE".curl >>"$TMP_FILE".status
+	grep '^0\.0\.0\.0' "$TMP_FILE".curl | awk '{print "local-zone: \""$2"\" always_null\n"}' | grep -v "0.0.0.0" >"$TMP_FILE"
+	counts "$TMP_FILE" | tee -a "$TMP_FILE".status
+	rm "$TMP_FILE".curl
+	cat "$TMP_FILE" >>"$ZONE_TMP_FILE"
+	echo >>"$ZONE_TMP_FILE"
 }
 
 grab_oisd() {
