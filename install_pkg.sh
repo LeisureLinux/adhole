@@ -13,7 +13,7 @@ VER="1.1.5"
 # Packages to install on Debian/Ubuntu systems
 # gh=github-cli
 # added libpacparser1 to check wpad proxy setup
-PKGS="vim psmisc curl python3 python3-pip nginx jq git netcat util-linux \
+PKGS="vim psmisc curl python3 python3-pip nginx jq git netcat-openbsd util-linux \
     tree parallel avahi-daemon nsd unbound xz-utils lsof zstd \
     bind9-dnsutils network-manager dos2unix libpacparser1 systemd-timesyncd"
 # Modify to suit your own data
@@ -47,7 +47,10 @@ EOSS
 base_line() {
 	# 基线，使用 network-manager，停用 systemd-resolved
 	# sudo dpkg-query -W $PKGS >/dev/null
-        sudo apt -y install $PKGS || (echo "Error: Install PKGs failed!" && exit 1)
+  if ! sudo -E apt -y install $PKGS ;then
+		echo "Error: Install PKGs failed!" 
+		exit 1
+	fi
 	# 时钟管理非常重要，否则 DNS 不能工作(需要去和 root DNS 同步)
 	# sudo apt -y purge ntp chrony 2>/dev/null
 	sudo systemctl start systemd-timesyncd
@@ -88,38 +91,6 @@ EOH
 	sudo apt -y autoremove
 }
 
-vim_plugInstall() {
-	if [ ! -r ~/.vim/autoload/plug.vim ]; then
-		# 下载安装 vim-plugin
-		curl -fL -o ~/.vim/autoload/plug.vim --create-dirs \
-			https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
-	else
-		# 检查安装的 Plugin
-		local TMPFILE=/tmp/plugs.txt
-		vim +"PlugStatus" +"write! $TMPFILE" +"qall"
-		[ -n "$(grep "vim-shfmt: OK" $TMPFILE)" ] && echo "Info: 相关插件已经安装" && rm $TMPFILE && return
-		rm $TMPFILE
-	fi
-	# 备份 .vimrc
-	[ -r ~/.vimrc ] && mv ~/.vimrc ~/.vimrc.bak
-	cat >~/.vimrc <<EOP
-" Base vim plugin configuration
-set number
-call plug#begin('~/.vim/plugged')
-  " shfmt the Shell formattor
-  Plug 'z0mbix/vim-shfmt', { 'for': 'sh' }
-  " nginx config
-  Plug 'chr4/nginx'
-call plug#end()
-"
-let g:shfmt_fmt_on_save = 1
-
-EOP
-	vim +"PlugInstall" +"qall"
-}
-
 # Main Prog.
 update_issue
 base_line
-# If need vim plugins, enable vim_plugInstall
-# vim_plugInstall
