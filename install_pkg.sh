@@ -47,7 +47,7 @@ EOSS
 base_line() {
 	# 基线，使用 network-manager，停用 systemd-resolved
 	# sudo dpkg-query -W $PKGS >/dev/null
-	if ! sudo -E apt -y install "$PKGS"; then
+	if ! sudo -E apt -y install ${PKGS}; then
 		echo "Error: Install PKGs failed!"
 		exit 1
 	fi
