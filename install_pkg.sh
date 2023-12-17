@@ -29,11 +29,10 @@ ADHOLE="/etc/adhole_version"
 
 update_issue() {
 	# [ -r /etc/debian_version ] && DEB_VER=$(cat /etc/debian_version)
-	if ! grep ^adhole /etc/issue 2>/dev/null; then
-		cat <<EOI | sudo tee -a /etc/issue
+	[ -r /etc/issue ] && sudo mv /etc/issue /etc/issue.orig
+	cat <<EOI | sudo tee /etc/issue
 adhole $VER \S \l
 EOI
-	fi
 	if [ ! -x /etc/update-motd.d/09-issue ]; then
 		cat <<EOSS | sudo tee /etc/update-motd.d/09-issue
 #!/bin/sh
