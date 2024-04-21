@@ -2,4 +2,4 @@
 # !!! Comments must start with hash on first column
 # https://raw.githubusercontent.com/jdlingyu/ad-wars/master/hosts
 https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn/hosts
-https://blocklistproject.github.io/Lists/adobe.txt
+# !!! this one blocked whole amazonaws.com site: https://blocklistproject.github.io/Lists/adobe.txt
