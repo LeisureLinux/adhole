@@ -7,6 +7,8 @@
 # Most time, github is slow or not able to access due to GFW, so need a local proxy
 export ALL_PROXY="http://wpad:8888/"
 #
+WORK_DIR=$(dirname "$0")
+cd "$WORK_DIR" || exit
 [ ! -x /usr/bin/gh ] && echo "Error: missing github cli!" && exit
 if ! gh auth status >/dev/null; then
 	echo "Error: github cli was not setup correctly!"
@@ -14,7 +16,7 @@ if ! gh auth status >/dev/null; then
 else
 	echo "Info: github cli looked OK."
 fi
-if [ -s result/adhole_status.txt ] && [ -s result/adhole.conf.zst ]; then
+if [ -s "$WORK_DIR"/result/adhole_status.txt ] && [ -s "$WORK_DIR"/result/adhole.conf.zst ]; then
 	for a in adhole_status.txt adhole.conf.zst; do
 		gh release delete-asset -y adhole $a
 	done
