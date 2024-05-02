@@ -1,18 +1,44 @@
 #!/bin/sh
+# wpad record in the LAN could be changed since its IP is obtained through DHCP
 # placed this file as /etc/unbound/wpad.sh and will called as service
 # Update wpad record, this need to to dynamically since IP could be changed
 # Normally people will have only one device in home LAN as wpad web server
-# here put the device IP to provide wpad service(Todo: check http://wpad/wpad.dat OK)
-HIP=$(hostname -I | awk '{print $1}')
-if [ "$1" != "-f" ]; then
-	[ "$(dig -4 +short wpad. @localhost)" = "$HIP" ] && echo "Info: No need to update wpad. record" && exit 1
+#
+if [ "$(curl -q -4 -kIsS -w '%{json}\n' http://wpad/wpad.dat 2>/dev/null | tail -1 | jq -r .http_code)" != "200" ]; then
+	echo "Error: Please setup wpad required web server first. e.g.: http://wpad/wpad.dat"
+fi
+
+HIP4=$(hostname -I | awk '{print $1}')
+HIP6=$(hostname -I | awk '{print $2}')
+if [ -n "$HIP4" ]; then
+	CIP4="$(dig -4 -tA +short wpad. @localhost)"
+	if [ "$CIP4" = "$HIP4" ]; then
+		echo "Info: No need to update wpad. v4 record"
+		RR4="local-data: \"wpad. 3600 IN A $CIP4\""
+	else
+		RR4="local-data: \"wpad. 3600 IN A $HIP4\""
+		update=1
+	fi
+fi
+if [ -n "$HIP6" ]; then
+	CIP6="$(dig -tAAAA +short wpad. @localhost)"
+	if [ "$CIP6" = "$HIP6" ]; then
+		echo "Info: No need to update wpad. v6 record"
+		RR6="local-data: \"wpad. 3600 IN AAAA $CIP6\""
+	else
+		RR6="local-data: \"wpad. 3600 IN AAAA $HIP6\""
+		update=1
+	fi
 fi
 [ ! -d /etc/unbound/adhole ] && mkdir -p /etc/unbound/adhole
-echo "Updating wpad.local. record ..."
+[ -z "$update" ] && echo "Info: old record is OK" && exit 1
+echo "Updating wpad. v4+v6 record ..."
 cat >/etc/unbound/adhole/wpad.conf <<EOW
 local-zone: "wpad." transparent
-local-zone: "wpad.local." transparent
-local-data: "wpad. IN A $HIP"
-local-data: "wpad.local. IN A $HIP"
+$RR4
+$RR6
 EOW
-/usr/sbin/unbound-control reload
+echo "Info: zone file:"
+cat /etc/unbound/adhole/wpad.conf
+echo "Reloading zone config ..."
+/usr/sbin/unbound-control reload && echo "All is well"
