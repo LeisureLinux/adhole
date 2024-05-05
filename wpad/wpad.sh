@@ -13,10 +13,6 @@ NIC=$(ip -j -br r s default | jq -r '.[].dev')
 # HIP6=$(hostname -I | awk '{print $2}')
 HIP4=$(ip -4 -j -br add show "$NIC" | jq -r '.[].addr_info|.[].local')
 HIP6=$(ip -6 -j add show "$NIC" | jq -r '.[].addr_info|.[]|select (.scope=="global" and .temporary==null and .mngtmpaddr==null).local')
-#  HIP6=$(ip -6 -j add show "$NIC" | jq '.[].addr_info|.[]|select (.scope=="global" and .temporary == null and .mngtmpaddr ==null)')
-AC=$(ip -6 -j -br r s | jq -r --arg NIC "$NIC" '.[]|select (.dev==$NIC and .protocol=="ra" and .gateway==null).dst')
-[ -n "$AC" ] && AC="access-control: $AC allow"
-# echo "4: $HIP4, 6: $HIP6 AC:$AC"
 if [ -n "$HIP4" ]; then
 	CIP4="$(dig -4 -tA +short wpad. @localhost)"
 	if [ "$CIP4" = "$HIP4" ]; then
@@ -28,6 +24,12 @@ if [ -n "$HIP4" ]; then
 	fi
 fi
 if [ -n "$HIP6" ]; then
+	# 	PREFIX=$(echo $HIP6 | cut -d: -f1,2)
+	#	echo "$PREFIX"
+	V6_ALLOW=$(ip -6 -j route show protocol ra dev "$NIC" | jq -r '.[]|select (.dst!="default" and .gateway==null).dst')
+	# |startswith(PRE)')
+	# [ -z "$AC" ] && AC=$(ip -6 -j -br r s | jq -r --arg NIC "$NIC" '.[]|select (.dev==$NIC and .protocol=="ra" and .dst!="default").dst')
+	[ -n "$V6_ALLOW" ] && V6_ALLOW="access-control: $V6_ALLOW allow"
 	CIP6="$(dig -tAAAA +short wpad. @localhost)"
 	if [ "$CIP6" = "$HIP6" ]; then
 		echo "Info: No need to update wpad. v6 record"
@@ -37,6 +39,7 @@ if [ -n "$HIP6" ]; then
 		update=1
 	fi
 fi
+echo "4: $HIP4, 6: $HIP6 AC:$V6_ALLOW"
 [ ! -d /etc/unbound/adhole ] && mkdir -p /etc/unbound/adhole
 [ -z "$update" ] && echo "Info: old record is OK" && exit 1
 echo "Updating wpad. v4+v6 record ..."
@@ -44,7 +47,7 @@ cat >/etc/unbound/adhole/wpad.conf <<EOW
 local-zone: "wpad." transparent
 $RR4
 $RR6
-$AC
+$V6_ALLOW
 EOW
 echo "Info: zone file:"
 cat /etc/unbound/adhole/wpad.conf
