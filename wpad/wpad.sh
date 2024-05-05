@@ -12,10 +12,11 @@ NIC=$(ip -j -br r s default | jq -r '.[].dev')
 # HIP4=$(hostname -I | awk '{print $1}')
 # HIP6=$(hostname -I | awk '{print $2}')
 HIP4=$(ip -4 -j -br add show "$NIC" | jq -r '.[].addr_info|.[].local')
-HIP6=$(ip -6 -j -br add show "$NIC" | jq -r '.[].addr_info|.[]|select (.prefixlen==128).local')
-AC=$(ip -6 r s | grep "$NIC" | awk '/ra/ && /via/ && !/default/ {print $1}')
+HIP6=$(ip -6 -j add show "$NIC" | jq -r '.[].addr_info|.[]|select (.scope=="global" and .temporary==null and .mngtmpaddr==null).local')
+#  HIP6=$(ip -6 -j add show "$NIC" | jq '.[].addr_info|.[]|select (.scope=="global" and .temporary == null and .mngtmpaddr ==null)')
+AC=$(ip -6 -j -br r s | jq -r --arg NIC "$NIC" '.[]|select (.dev==$NIC and .protocol=="ra" and .gateway==null).dst')
 [ -n "$AC" ] && AC="access-control: $AC allow"
-# echo "4: $HIP4, 6: $HIP6"
+# echo "4: $HIP4, 6: $HIP6 AC:$AC"
 if [ -n "$HIP4" ]; then
 	CIP4="$(dig -4 -tA +short wpad. @localhost)"
 	if [ "$CIP4" = "$HIP4" ]; then
