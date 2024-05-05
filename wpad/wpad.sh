@@ -4,12 +4,8 @@
 # Update wpad record, this need to to dynamically since IP could be changed
 # Normally people will have only one device in home LAN as wpad web server
 #
-if [ "$(curl -q -4 -kIsS -w '%{json}\n' http://wpad/wpad.dat 2>/dev/null | tail -1 | jq -r .http_code)" != "200" ]; then
-	echo "Warning: Please setup wpad required web server first. e.g.: http://wpad/wpad.dat"
-fi
 
 check_v4() {
-	# HIP4=$(hostname -I | awk '{print $1}')
 	HIP4=$(ip -4 -j -br add show "$NIC" | jq -r '.[].addr_info|.[].local')
 	echo "Info: v4 address: $HIP4"
 	if [ -n "$HIP4" ]; then
@@ -30,9 +26,9 @@ check_v6() {
 		return
 	fi
 	# HIP6=$(hostname -I | awk '{print $2}')
-	# HIP6=$(ip -6 -j add show "$NIC" scope global | jq -r '.[].addr_info|.[]|select (.temporary==null and .mngtmpaddr==null and .local!=null).local')
 	HIP6=$(ip -6 -j add show "$NIC" scope global | jq -r '.[].addr_info|.[]|select (.temporary==null and .mngtmpaddr==null and .local!=null)|(.prefixlen,.local)' | paste - - | sort -n | tail -1 | awk '{print $NF}')
 	[ -z "$HIP6" ] && HIP6=$(ip -6 -j add show "$NIC" scope global | jq -r '.[].addr_info|.[]|select (.temporary==null and .dynamic==true).local')
+	[ -z "$HIP6" ] && echo "Error: IPv6 not configured." && return
 	if [ -n "$HIP6" ]; then
 		echo "Info: v6 address: $HIP6"
 		# 	PREFIX=$(echo $HIP6 | cut -d: -f1,2)
@@ -59,16 +55,21 @@ RESOLVER=$(awk '/^nameserver/ {print $2}' /etc/resolv.conf | head -1)
 [ -z "$RESOLVER" ] && RESOLVER="127.0.0.1"
 
 if ! nc -4uvz "$RESOLVER" 53 2>/dev/null; then
-	echo "Warning: no DNS Service Running on $RESOLVER."
-	exit 9
+	echo "Error: no DNS Service Running on $RESOLVER."
+	exit 5
 fi
 
 NIC=$(ip -j -br r s default | jq -r '.[].dev')
+[ -z "$NIC" ] && echo "Error: no default route found!" && exit 1
 check_v4
 check_v6
-[ -z "$update" ] && echo "Info: old record is OK" && exit 1
+[ -z "$update" ] && echo "Info: old record is OK" && exit
 WPAD="/etc/unbound/adhole/wpad.conf"
-[ ! -f "$WPAD" ] && echo "Warning: No zone file $WPAD exist, no need to reload zone." && exit 9
+[ ! -f "$WPAD" ] && echo "Warning: No zone file $WPAD exists, no need to reload zone." && exit 9
+
+if [ "$(curl -q -4 -kIsS -w '%{json}\n' http://wpad/wpad.dat 2>/dev/null | tail -1 | jq -r .http_code)" != "200" ]; then
+	echo "Warning: Please setup wpad required web server first. e.g.: http://wpad/wpad.dat"
+fi
 #
 [ ! -d /etc/unbound/adhole ] && sudo mkdir -p /etc/unbound/adhole
 echo "Updating wpad. v4+v6 record ..."
