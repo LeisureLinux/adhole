@@ -41,7 +41,7 @@ if [ -n "$HIP6" ]; then
 		update=1
 	fi
 fi
-echo "4: $HIP4, 6: $HIP6 AC:$V6_ALLOW"
+echo "Info: v4 address: $HIP4; v6 address: $HIP6; v6 subnet to allow:$V6_ALLOW"
 [ -z "$update" ] && echo "Info: old record is OK" && exit 1
 WPAD="/etc/unbound/adhole/wpad.conf"
 [ ! -f "$WPAD" ] && echo "Warning: No zone file $WPAD exist, no need to reload zone." && exit 9
