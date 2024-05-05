@@ -29,9 +29,8 @@ if [ -n "$HIP6" ]; then
 	#	echo "$PREFIX"
 	V6_ALLOW=$(ip -6 -j route show protocol ra dev "$NIC" | jq -r '.[]|select (.dst!="default" and .gateway==null).dst')
 	[ -z "$V6_ALLOW" ] && V6_ALLOW=$(ip -6 -j route show protocol ra dev "$NIC" | jq -r '.[]|select (.dst!="default").dst')
-	[ -z "$V6_ALLOW" ] && V6_ALLOW=$(ip -6 -j route show dev "$NIC" | jq -r '.[]|select (.dst!="default").dst')
+	[ -z "$V6_ALLOW" ] && V6_ALLOW=$(ip -6 -j route show dev "$NIC" | jq -r '.[]|select (.dst!="default").dst' | grep -v "^fe80")
 	# |startswith(PRE)')
-	# [ -z "$AC" ] && AC=$(ip -6 -j -br r s | jq -r --arg NIC "$NIC" '.[]|select (.dev==$NIC and .protocol=="ra" and .dst!="default").dst')
 	[ -n "$V6_ALLOW" ] && V6_ALLOW="access-control: $V6_ALLOW allow"
 	CIP6="$(dig -tAAAA +short wpad. @localhost)"
 	if [ "$CIP6" = "$HIP6" ]; then
