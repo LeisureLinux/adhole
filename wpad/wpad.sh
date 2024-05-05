@@ -27,6 +27,7 @@ if [ -n "$HIP6" ]; then
 	# 	PREFIX=$(echo $HIP6 | cut -d: -f1,2)
 	#	echo "$PREFIX"
 	V6_ALLOW=$(ip -6 -j route show protocol ra dev "$NIC" | jq -r '.[]|select (.dst!="default" and .gateway==null).dst')
+	[ -z "$V6_ALLOW" ] && V6_ALLOW=$(ip -6 -j route show protocol ra dev "$NIC" | jq -r '.[]|select (.dst!="default").dst')
 	# |startswith(PRE)')
 	# [ -z "$AC" ] && AC=$(ip -6 -j -br r s | jq -r --arg NIC "$NIC" '.[]|select (.dev==$NIC and .protocol=="ra" and .dst!="default").dst')
 	[ -n "$V6_ALLOW" ] && V6_ALLOW="access-control: $V6_ALLOW allow"
