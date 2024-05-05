@@ -42,16 +42,18 @@ if [ -n "$HIP6" ]; then
 	fi
 fi
 echo "4: $HIP4, 6: $HIP6 AC:$V6_ALLOW"
-[ ! -d /etc/unbound/adhole ] && mkdir -p /etc/unbound/adhole
 [ -z "$update" ] && echo "Info: old record is OK" && exit 1
+WPAD="/etc/unbound/adhole/wpad.conf"
+[ ! -f "$WPAD" ] && echo "Warning: No zone file $WPAD exist, no need to reload zone." && exit 9
+[ ! -d /etc/unbound/adhole ] && mkdir -p /etc/unbound/adhole
 echo "Updating wpad. v4+v6 record ..."
-cat >/etc/unbound/adhole/wpad.conf <<EOW
+cat >$WPAD <<EOW
 local-zone: "wpad." transparent
 $RR4
 $RR6
 $V6_ALLOW
 EOW
 echo "Info: zone file:"
-cat /etc/unbound/adhole/wpad.conf
+cat $WPAD
 echo "Reloading zone config ..."
 /usr/sbin/unbound-control reload && echo "All is well"
