@@ -30,7 +30,8 @@ check_v6() {
 		return
 	fi
 	# HIP6=$(hostname -I | awk '{print $2}')
-	HIP6=$(ip -6 -j add show "$NIC" scope global | jq -r '.[].addr_info|.[]|select (.temporary==null and .mngtmpaddr==null and .local!=null).local')
+	# HIP6=$(ip -6 -j add show "$NIC" scope global | jq -r '.[].addr_info|.[]|select (.temporary==null and .mngtmpaddr==null and .local!=null).local')
+	HIP6=$(ip -6 -j add show "$NIC" scope global | jq -r '.[].addr_info|.[]|select (.temporary==null and .mngtmpaddr==null and .local!=null)|(.prefixlen,.local)' | paste - - | sort -n | tail -1 | awk '{print $NF}')
 	[ -z "$HIP6" ] && HIP6=$(ip -6 -j add show "$NIC" scope global | jq -r '.[].addr_info|.[]|select (.temporary==null and .dynamic==true).local')
 	if [ -n "$HIP6" ]; then
 		echo "Info: v6 address: $HIP6"
