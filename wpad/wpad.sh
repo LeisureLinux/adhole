@@ -12,7 +12,8 @@ NIC=$(ip -j -br r s default | jq -r '.[].dev')
 # HIP4=$(hostname -I | awk '{print $1}')
 # HIP6=$(hostname -I | awk '{print $2}')
 HIP4=$(ip -4 -j -br add show "$NIC" | jq -r '.[].addr_info|.[].local')
-HIP6=$(ip -6 -j add show "$NIC" | jq -r '.[].addr_info|.[]|select (.scope=="global" and .temporary==null and .mngtmpaddr==null).local')
+HIP6=$(ip -6 -j add show "$NIC" scope global | jq -r '.[].addr_info|.[]|select (.temporary==null and .prefixlen==128).local')
+[ -z "$HIP6" ] && HIP6=$(ip -6 -j add show "$NIC" scope global | jq -r '.[].addr_info|.[]|select (.temporary==null and .mngtmpaddr==null).local')
 [ -z "$HIP6" ] && HIP6=$(ip -6 -j add show "$NIC" scope global | jq -r '.[].addr_info|.[]|select (.temporary==null and .dynamic==true).local')
 if [ -n "$HIP4" ]; then
 	CIP4="$(dig -4 -tA +short wpad. @localhost)"
