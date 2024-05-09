@@ -59,7 +59,7 @@ if ! nc -4uvz "$RESOLVER" 53 2>/dev/null; then
 	exit 5
 fi
 
-NIC=$(ip -j -br r s default | jq -r '.[].dev')
+NIC=$(ip -j -br r s default|jq -r '.[]|select (.protocol=="dhcp").dev')
 [ -z "$NIC" ] && echo "Error: no default route found!" && exit 1
 check_v4
 check_v6
