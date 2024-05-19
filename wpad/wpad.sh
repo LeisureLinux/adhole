@@ -33,9 +33,9 @@ check_v6() {
 		echo "Info: v6 address: $HIP6"
 		# 	PREFIX=$(echo $HIP6 | cut -d: -f1,2)
 		#	echo "$PREFIX"
-		V6_ALLOW=$(ip -6 -j route show protocol ra dev "$NIC" | jq -r '.[]|select (.dst!="default" and .gateway==null).dst')
+		V6_ALLOW=$(ip -6 -j route show dev "$NIC" | jq -r '.[]|select (.dst!="default").dst' | grep -E -v "^fe80|/")
 		[ -z "$V6_ALLOW" ] && V6_ALLOW=$(ip -6 -j route show protocol ra dev "$NIC" | jq -r '.[]|select (.dst!="default").dst')
-		[ -z "$V6_ALLOW" ] && V6_ALLOW=$(ip -6 -j route show dev "$NIC" | jq -r '.[]|select (.dst!="default").dst' | grep -E -v "^fe80|/")
+		[ -z "$V6_ALLOW" ] && V6_ALLOW=$(ip -6 -j route show protocol ra dev "$NIC" | jq -r '.[]|select (.dst!="default" and .gateway==null).dst')
 		# |startswith(PRE)')
 		echo "Info: v6 subnet to allow DNS query: $V6_ALLOW"
 		[ -n "$V6_ALLOW" ] && V6_ALLOW="access-control: $V6_ALLOW allow"
