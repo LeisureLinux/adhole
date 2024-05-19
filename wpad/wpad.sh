@@ -33,12 +33,12 @@ check_v6() {
 		echo "Info: v6 address: $HIP6"
 		# 	PREFIX=$(echo $HIP6 | cut -d: -f1,2)
 		#	echo "$PREFIX"
-		V6_ALLOW=$(ip -6 -j route show dev "$NIC" | jq -r '.[]|select (.dst!="default").dst' | grep -E -v "^fe80|/")
-		[ -z "$V6_ALLOW" ] && V6_ALLOW=$(ip -6 -j route show protocol ra dev "$NIC" | jq -r '.[]|select (.dst!="default").dst')
+		V6_ALLOW=$(ip -6 -j route show protocol ra dev "$NIC" | jq -r '.[]|select (.dst!="default").dst')
 		[ -z "$V6_ALLOW" ] && V6_ALLOW=$(ip -6 -j route show protocol ra dev "$NIC" | jq -r '.[]|select (.dst!="default" and .gateway==null).dst')
+		[ -z "$V6_ALLOW" ] && V6_ALLOW=$(ip -6 -j route show dev "$NIC" | jq -r '.[]|select (.dst!="default").dst' | grep -v "^fe80")
 		# |startswith(PRE)')
 		echo "Info: v6 subnet to allow DNS query: $V6_ALLOW"
-		[ -n "$V6_ALLOW" ] && V6_ALLOW="access-control: $V6_ALLOW allow"
+		[ -n "$V6_ALLOW" ] && V6_ALLOW=$(echo "$V6_ALLOW"|sort|uniq|awk '{print "access-control:",$0,"allow"}')
 		CIP6=$(dig -t AAAA +short wpad. @"$RESOLVER" 2>/dev/null)
 		if [ "$CIP6" = "$HIP6" ]; then
 			echo "Info: No need to update wpad. v6 record"
@@ -59,7 +59,7 @@ if ! nc -4uvz "$RESOLVER" 53 2>/dev/null; then
 	exit 5
 fi
 
-NIC=$(ip -j -br r s default | jq -r '.[]|select (.protocol=="dhcp").dev')
+NIC=$(ip -j -br r s default|jq -r '.[]|select (.protocol=="dhcp").dev')
 [ -z "$NIC" ] && echo "Error: no default route found!" && exit 1
 check_v4
 check_v6
@@ -81,5 +81,9 @@ $V6_ALLOW
 EOW
 echo "Info: zone file:"
 cat $WPAD
+if ! /usr/sbin/unbound-checkconf /etc/unbound/unbound.conf; then
+	echo "Error: new config file $WPAD failed to pass check"
+	exit 9
+fi
 echo "Reloading zone config ..."
 /usr/sbin/unbound-control reload && echo "All is well"
