@@ -35,7 +35,7 @@ check_v6() {
 		#	echo "$PREFIX"
 		V6_ALLOW=$(ip -6 -j route show protocol ra dev "$NIC" | jq -r '.[]|select (.dst!="default" and .gateway==null).dst')
 		[ -z "$V6_ALLOW" ] && V6_ALLOW=$(ip -6 -j route show protocol ra dev "$NIC" | jq -r '.[]|select (.dst!="default").dst')
-		[ -z "$V6_ALLOW" ] && V6_ALLOW=$(ip -6 -j route show dev "$NIC" | jq -r '.[]|select (.dst!="default").dst' | grep -v "^fe80")
+		[ -z "$V6_ALLOW" ] && V6_ALLOW=$(ip -6 -j route show dev "$NIC" | jq -r '.[]|select (.dst!="default").dst' | grep -E -v "^fe80|/")
 		# |startswith(PRE)')
 		echo "Info: v6 subnet to allow DNS query: $V6_ALLOW"
 		[ -n "$V6_ALLOW" ] && V6_ALLOW="access-control: $V6_ALLOW allow"
@@ -59,7 +59,7 @@ if ! nc -4uvz "$RESOLVER" 53 2>/dev/null; then
 	exit 5
 fi
 
-NIC=$(ip -j -br r s default|jq -r '.[]|select (.protocol=="dhcp").dev')
+NIC=$(ip -j -br r s default | jq -r '.[]|select (.protocol=="dhcp").dev')
 [ -z "$NIC" ] && echo "Error: no default route found!" && exit 1
 check_v4
 check_v6
