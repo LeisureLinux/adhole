@@ -26,7 +26,7 @@ check_v6() {
 		return
 	fi
 	# HIP6=$(hostname -I | awk '{print $2}')
-	HIP6=$(ip -6 -j add show "$NIC" scope global | jq -r '.[].addr_info|.[]|select (.temporary==null and .mngtmpaddr==null and .local!=null)|(.prefixlen,.local)' | paste - - | sort -n | tail -1 | awk '{print $NF}')
+	HIP6=$(ip -6 -j add show "$NIC" scope global | jq -r '.[].addr_info|.[]|select (.temporary==null and .mngtmpaddr==null and .local!=null)|(.prefixlen,.local)' | paste - - | sort -n | tail -1 | awk '{print $NF}' | grep -i -E "^fc|^fd")
 	[ -z "$HIP6" ] && HIP6=$(ip -6 -j add show "$NIC" scope global | jq -r '.[].addr_info|.[]|select (.temporary==null and .dynamic==true).local')
 	[ -z "$HIP6" ] && echo "Error: IPv6 not configured." && return
 	if [ -n "$HIP6" ]; then
@@ -38,7 +38,7 @@ check_v6() {
 		[ -z "$V6_ALLOW" ] && V6_ALLOW=$(ip -6 -j route show dev "$NIC" | jq -r '.[]|select (.dst!="default").dst' | grep -v "^fe80")
 		# |startswith(PRE)')
 		echo "Info: v6 subnet to allow DNS query: $V6_ALLOW"
-		[ -n "$V6_ALLOW" ] && V6_ALLOW=$(echo "$V6_ALLOW"|sort|uniq|awk '{print "access-control:",$0,"allow"}')
+		[ -n "$V6_ALLOW" ] && V6_ALLOW=$(echo "$V6_ALLOW" | sort | uniq | awk '{print "access-control:",$0,"allow"}')
 		CIP6=$(dig -t AAAA +short wpad. @"$RESOLVER" 2>/dev/null)
 		if [ "$CIP6" = "$HIP6" ]; then
 			echo "Info: No need to update wpad. v6 record"
@@ -59,7 +59,7 @@ if ! nc -4uvz "$RESOLVER" 53 2>/dev/null; then
 	exit 5
 fi
 
-NIC=$(ip -j -br r s default|jq -r '.[]|select (.protocol=="dhcp").dev')
+NIC=$(ip -j -br r s default | jq -r '.[]|select (.protocol=="dhcp").dev')
 [ -z "$NIC" ] && echo "Error: no default route found!" && exit 1
 check_v4
 check_v6
