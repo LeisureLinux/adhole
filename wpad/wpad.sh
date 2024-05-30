@@ -34,7 +34,7 @@ check_v6() {
 		echo "Info: v6 address: $HIP6"
 		# 	PREFIX=$(echo $HIP6 | cut -d: -f1,2)
 		#	echo "$PREFIX"
-		V6_ALLOW=$(ip -6 -j route show protocol ra dev "$NIC" | jq -r '.[]|select (.dst!="default").dst')
+		V6_ALLOW=$(ip -6 -j route show protocol ra dev "$NIC" | jq -r '.[]|select (.dst!="default").dst' | grep -i -E '^fc|^fd')
 		[ -z "$V6_ALLOW" ] && V6_ALLOW=$(ip -6 -j route show protocol ra dev "$NIC" | jq -r '.[]|select (.dst!="default" and .gateway==null).dst')
 		[ -z "$V6_ALLOW" ] && V6_ALLOW=$(ip -6 -j route show dev "$NIC" | jq -r '.[]|select (.dst!="default").dst' | grep -v "^fe80")
 		# |startswith(PRE)')
