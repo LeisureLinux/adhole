@@ -39,6 +39,9 @@ sudo chown unbound /var/lib/unbound/logs
 [ $? != 0 ] && echo "Error: there is issue in unbound installation" && exit 3
 sudo cp -f conf/nsd.conf /etc/nsd
 sudo cp -f conf/unbound.conf /etc/unbound
+touch /var/lib/unbound/root.key
+sudo /usr/sbin/unbound-anchor -a /var/lib/unbound/root.key
+[ $? != 0 ] && echo "Error: Generating anchor: /var/lib/unbound/root.key failed!" && exit 4
 echo "Info: Enabling nsd and unbound service ..."
 sudo systemctl enable nsd
 sudo systemctl restart nsd
