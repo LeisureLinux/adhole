@@ -147,7 +147,7 @@ install_goproxy() {
 	"aarch64") ARCH="arm64-v8" ;;
 	esac
 	echo "Info: Downloading goproxy linux binary for arch=$ARCH from github ... "
-	curl -m 10 -sSL -x socks5://127.0.0.1:$PRX_PORT https://github.com/snail007/goproxy/releases/download/$VER/proxy-linux-$ARCH.tar.gz -o /tmp/goproxy.tar.gz
+	curl -sSL -x socks5h://127.0.0.1:$PRX_PORT https://github.com/snail007/goproxy/releases/download/$VER/proxy-linux-$ARCH.tar.gz -o /tmp/goproxy.tar.gz
 	if [ $? = 0 ]; then
 		echo "Info Downloaded goproxy $VER"
 	else
@@ -198,7 +198,7 @@ gen_wpad() {
 	PAC="PROXY $IP:$HTTP_PORT; $PROXY"
 	check_local_port
 	echo "Info: generating $WPAD with --pac-proxy=\"$PAC\" ..."
-	/usr/local/bin/genpac --format=pac --pac-proxy="$PAC" --gfwlist-proxy "socks5 127.0.0.1:$PRX_PORT" | sudo tee $WPAD >/dev/null
+	/usr/local/bin/genpac --format=pac --pac-proxy="$PAC" --proxy "socks5://127.0.0.1:$PRX_PORT" | sudo tee $WPAD >/dev/null
 	GOOGLE=$(pactester -p $WPAD -u https://www.google.com)
 	BAIDU=$(pactester -p $WPAD -u https://www.baidu.com)
 	[ "$GOOGLE" != "$PAC" -o "$BAIDU" != "DIRECT" ] && echo "Error: Looked like $WPAD file not working correctly \
@@ -241,15 +241,15 @@ fi
 #
 IFS=
 HIP=$(hostname -I | awk '{print $1}')
-IP1=$(dig -4 +short wpad.local @localhost | tail -1)
+# IP1=$(dig -4 +short wpad.local @localhost | tail -1)
 IP2=$(dig -4 +short wpad @localhost | tail -1)
-if [ $? != 0 -o -z "$IP1" -o -z "$IP2" ]; then
+if [ $? != 0 -o -z "$IP2" ]; then
 	echo "Error: wpad record was not setup correctly! "
 	echo "Run: \"unbound-control local_data wpad. A $HIP\" to add wpad record and re-run this script."
 	exit 1
 fi
-IP=$IP1
-echo "wpad.local was setup as $IP"
+IP=$IP2
+echo "wpad was setup as $IP"
 PROXY="socks5 $IP:$PRX_PORT"
 
 # gen_wpad
