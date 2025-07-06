@@ -5,13 +5,15 @@ set -e
 # We have two local socks5(ShadowSocks) proxy service running on tcp port 2023 and 2026(For my own usage with IPv6).
 # http://wpad is a local web server hosting the pac script: wpad.dat, which tell the proxy server rules.
 # Global Variable to modify
-
-WPAD_IP=$(dig -tA +short wpad)
-[ -z "$WPAD_IP" ] && WPAD_IP="192.168.68.68"
+WPAD="wpad"
+[ -n "$2" ] && WPAD="$2"
+WPAD_IP=$(getent hosts $WPAD 2>/dev/null | awk '{print $1}')
+# WPAD_IP=$(dig -tA +short wpad)
+[ -z "$WPAD_IP" ] && echo "Error: not able to resolve wpad hostname: $WPAD" && exit
 #
-WPAD_URL="http://wpad/wpad.dat"
-P4="socks5h://wpad:2023"
-P6="socks5h://wpad:2026"
+WPAD_URL="http://$WPAD/wpad.dat"
+P4="socks5h://$WPAD:2023"
+P6="socks5h://$WPAD:2026"
 #
 CHECK_URL="https://www.google.com/"
 SSH_OPTION="-o StrictHostKeyChecking=accept-new"
@@ -27,11 +29,11 @@ check_ip() {
 #
 check4() {
   echo "Info: Checking IPv4 availability ..."
-  if ! dig -tA +short wpad >/dev/null; then
+  if ! dig -tA +short $WPAD >/dev/null; then
     echo "Error: Not able to resolv IPv4 hostname: wpad"
     exit 1
   fi
-  if ! ping -4 -q -c 2 wpad >/dev/null 2>&1; then
+  if ! ping -4 -q -c 2 $WPAD >/dev/null 2>&1; then
     echo "Error: Not able to ping wpad IPv4 address"
     exit 1
   fi
@@ -43,7 +45,7 @@ check4() {
   fi
 
   get_port "$P4"
-  if ! nc -4zv "wpad" "$port" >/dev/null 2>&1; then
+  if ! nc -4zv "$WPAD" "$port" >/dev/null 2>&1; then
     echo "Error: Check port $port failed."
     exit 3
   else
@@ -69,11 +71,11 @@ check6() {
     echo "Error: IPv6 disabled in OS!"
     return
   fi
-  if ! dig -tAAAA +short wpad >/dev/null; then
+  if ! dig -tAAAA +short $WPAD >/dev/null; then
     echo "Error: Not able to resolv IPv6 hostname: wpad"
     exit 1
   fi
-  if ! ping -6 -q -c 2 wpad 1>/dev/null 2>&1; then
+  if ! ping -6 -q -c 2 $WPAD 1>/dev/null 2>&1; then
     echo "Error: Not able to ping wpad IPv6 address"
     exit 1
   fi
@@ -84,13 +86,13 @@ check6() {
     echo "Info: curl v6 wpad.dat is OK."
   fi
   get_port $P6
-  if ! nc -6zv wpad "$port" >/dev/null 2>&1; then
+  if ! nc -6zv $WPAD "$port" >/dev/null 2>&1; then
     echo "Error: Check port $port failed."
     exit 3
   else
     echo "Info: port $port is OK."
   fi
-  ssh -6 "$SSH_OPTION" wpad "echo Info: SSH to wpad on IPv6 is OK" || echo "Error: SSH to wpad IPv6 failed."
+  ssh -6 "$SSH_OPTION" $WPAD "echo Info: SSH to wpad on IPv6 is OK" || echo "Error: SSH to wpad IPv6 failed."
   # Application level check SS is working
   echo "Info: Checking proxy: $P6 ..."
   if ! curl -q -6 -x $P6 -kIsS $CHECK_URL 2>/dev/null | grep -q "^HTTP"; then

@@ -7,3 +7,6 @@ as.weixin.qq.com
 pandora.xiaomi.com
 # B站市场活动
 cm.bilibili.com
+data.bilibili.com
+miniapp.bilibili.com
+
