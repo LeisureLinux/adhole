@@ -22,6 +22,8 @@ CACHE_DIR=$HOME/.cache/adhole
 #
 ZONE_FILE=$WORK_DIR/result/adhole.conf
 STATUS="$WORK_DIR"/result/adhole_status.txt
+# Grab log: per-run log of all fetch / grab actions
+GRAB_LOG="$WORK_DIR/result/grab_$(date +%Y%m%d_%H%M%S).log"
 #
 BLOCK_URL=$WORK_DIR/block_urls.txt
 # the contents of the URL in the list are only domain names plaintext
@@ -34,6 +36,23 @@ ZONE_TMP_FILE=/tmp/$(basename "${ZONE_FILE}").tmp
 
 cat /dev/null >"$ZONE_TMP_FILE"
 touch "$ZONE_FILE".zst "$BLOCK_URL" "$BLOCK_DOM" "$UNBLOCK_DOM" "$TEXT_URL"
+
+# log(): print a message to both stdout and the grab log
+log() {
+	echo "[$(date +'%Y-%m-%d %H:%M:%S')] $*" | tee -a "$GRAB_LOG"
+}
+
+# clean_old_grab_logs(): delete grab_*.log files older than 10 days in result/
+clean_old_grab_logs() {
+	# -mtime +10 = modification time strictly greater than 10*24h ago
+	local removed
+	removed=$(find "$WORK_DIR/result" -maxdepth 1 -type f -name 'grab_*.log' -mtime +10 -print -delete 2>/dev/null | wc -l)
+	if [ "$removed" -gt 0 ]; then
+		log "Info: cleaned $removed old grab log file(s) (>10 days) from $WORK_DIR/result"
+	else
+		log "Info: no old grab log files (>10 days) to clean in $WORK_DIR/result"
+	fi
+}
 #
 counts() {
 	[ -r "$1" ] && echo "Info: Blocked $(grep -c "^local-zone" "$1") domains"
@@ -62,13 +81,13 @@ block_text() {
 	[ "$fname" = "hosts" ] && fname=$(echo "$AD_URL" | awk -F/ '{print $(NF - 1)}' | awk -F'?' '{print $1}')".hosts.txt"
 	TMP_FILE=$CACHE_DIR/$fname
 	if file_age "$TMP_FILE".status; then
-		echo "Info: no need to grab $AD_URL"
+		log "Info: no need to grab $AD_URL"
 		[ -r "$TMP_FILE" ] && cat "$TMP_FILE" >>"$ZONE_TMP_FILE"
 		return
 	fi
-	echo "Info: Grabbing $AD_URL to $TMP_FILE ..."
+	log "Info: Grabbing $AD_URL to $TMP_FILE ..."
 	if ! $CURL "$AD_URL" >"$TMP_FILE".curl; then
-		echo "Error: grab $AD_URL failed!"
+		log "Error: grab $AD_URL failed!"
 		return
 	fi
 	echo "URL: $AD_URL" >"$TMP_FILE".status
@@ -94,14 +113,14 @@ block() {
 	[ "$fname" = "hosts" ] && fname=$(echo "$AD_URL" | awk -F/ '{print $(NF - 1)}')".hosts"
 	TMP_FILE=$CACHE_DIR/$fname
 	if file_age "$TMP_FILE".status; then
-		echo "Info: no need to grab $AD_URL"
+		log "Info: no need to grab $AD_URL"
 		[ -r "$TMP_FILE" ] && cat "$TMP_FILE" >>"$ZONE_TMP_FILE"
 		return
 	fi
-	echo "Info: Grabbing $AD_URL to $TMP_FILE ..."
+	log "Info: Grabbing $AD_URL to $TMP_FILE ..."
 	if ! $CURL "$AD_URL" >"$TMP_FILE"; then
 		# 	[ $? != 0 ] &&
-		echo "Error: grab $AD_URL failed!" && return
+		log "Error: grab $AD_URL failed!" && return
 	fi
 	# Pre-process, remove some IP address
 	grep -E -v '127.0.0.1|255.255.255|::' "$TMP_FILE" >"$TMP_FILE".curl
@@ -121,13 +140,13 @@ grab_oisd() {
 	[ "$fname" = "hosts" ] && fname=$(echo "$AD_URL" | awk -F/ '{print $(NF - 1)}')".hosts"
 	TMP_FILE=$CACHE_DIR/$(basename $AD_URL)
 	if file_age "$TMP_FILE".status; then
-		echo "Info: no need to grab $AD_URL"
+		log "Info: no need to grab $AD_URL"
 		[ -r "$TMP_FILE" ] && cat "$TMP_FILE" >>"$ZONE_TMP_FILE"
 		return
 	fi
-	echo "Info: Grabbing $AD_URL to $TMP_FILE ..."
+	log "Info: Grabbing $AD_URL to $TMP_FILE ..."
 	if ! $CURL $AD_URL -o "$TMP_FILE"; then
-		echo "Error: grab $AD_URL failed!" && return
+		log "Error: grab $AD_URL failed!" && return
 	fi
 	echo "URL: $AD_URL" >"$TMP_FILE".status
 	grep "^#" "$TMP_FILE" | grep . >>"$TMP_FILE".status
@@ -147,16 +166,26 @@ gen_status() {
 		grep . "$s" >>"$STATUS"
 		echo >>"$STATUS"
 	done
+	cat $STATUS >> $GRAB_LOG
 }
 #
 # Main Prog.
+log "==========================================="
+log "adhole.sh started, log file: $GRAB_LOG"
+log "WORK_DIR: $WORK_DIR"
+log "CACHE_DIR: $CACHE_DIR"
+log "ZONE_FILE: $ZONE_FILE"
+log "Proxy: ${PROXY:-none}"
+
+clean_old_grab_logs
+
 if [ -n "$PROXY" ]; then
-	echo "Info: Checking proxy healthy..."
+	log "Info: Checking proxy healthy..."
 	if ! ${CURL} -kIsS https://www.google.com/ >/dev/null; then
-		echo "Error: Failed to check Google!"
+		log "Error: Failed to check Google!"
 		exit 1
 	else
-		echo "Info: Proxy server reached google.com OK."
+		log "Info: Proxy server reached google.com OK."
 	fi
 fi
 
@@ -173,7 +202,7 @@ done
 #     done
 # fi
 
-echo "Info: Add local block domain list ..."
+log "Info: Add local block domain list ..."
 grep -v "^#" "$BLOCK_DOM" | grep . | awk '{print "local-zone: \"" $1 "\" always_null"}' >>"$ZONE_TMP_FILE"
 #
 mv "$ZONE_FILE".zst "$ZONE_FILE".zst.old 2>/dev/null
@@ -188,19 +217,19 @@ EOH
 # remove unblock domains from the generated block list and deduplicate
 exclude_domain=$(grep -v "^#" "$UNBLOCK_DOM" | xargs | tr " " "|")
 # e.g. exclude_domain="as.weixin.qq.com|pandora.xiaomi.com|cm.bilibili.com"
-echo "Info: deduplicating ..."
+log "Info: deduplicating ..."
 time grep -v "0.0.0.0" "$ZONE_TMP_FILE" | sed -e 's/\."/"/g' | grep -E -v "$exclude_domain" | tr "[:upper:]" "[:lower:]" | $SORT -u >>"$ZONE_FILE"
 rm "$ZONE_TMP_FILE"
-echo "Info: results after deduplication:"
+log "Info: results after deduplication:"
 counts "$ZONE_FILE"
 cat >/tmp/check.conf <<EOF
 server:
 include: "$ZONE_FILE"
 EOF
 if ! /usr/sbin/unbound-checkconf /tmp/check.conf 2>/dev/null; then
-	echo "Error: Found error in $ZONE_FILE"
+	log "Error: Found error in $ZONE_FILE"
 else
-	echo "Info: compressing $ZONE_FILE ..."
+	log "Info: compressing $ZONE_FILE ..."
 	zst "$ZONE_FILE"
 	gen_status
 	"${WORK_DIR}"/gh-upload.sh
