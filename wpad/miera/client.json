@@ -1,0 +1,35 @@
+{
+    "profiles": [
+        {
+            "profileName": "default",
+            "user": {
+                "name": "YOUR_USERNAME",
+                "password": "YOUR_PASSWORD"
+            },
+            "servers": [
+                {
+                    "ipAddress": "PLACEHOLDER",
+                    "domainName": "",
+                    "portBindings": [
+                        {
+                            "port": 8443,
+                            "protocol": "TCP"
+                        }
+                    ]
+                }
+            ],
+            "mtu": 1400,
+            "multiplexing": {
+                "level": "MULTIPLEXING_LOW"
+            },
+            "handshakeMode": "HANDSHAKE_STANDARD"
+        }
+    ],
+    "activeProfile": "default",
+    "rpcPort": 8964,
+    "socks5Port": 1080,
+    "loggingLevel": "INFO",
+    "socks5ListenLAN": false,
+    "httpProxyPort": 8888,
+    "httpProxyListenLAN": false
+}

@@ -2,7 +2,7 @@
 set -e
 # set -x
 # Monitor proxy status
-# We have two local socks5(ShadowSocks) proxy service running on tcp port 2023 and 2026(For my own usage with IPv6).
+# We have two local socks5(Miera) proxy services running on tcp port 1080(standard) and optionally a secondary port.
 # http://wpad is a local web server hosting the pac script: wpad.dat, which tell the proxy server rules.
 # Global Variable to modify
 WPAD="wpad"
@@ -12,8 +12,8 @@ WPAD_IP=$(getent hosts $WPAD 2>/dev/null | awk '{print $1}')
 [ -z "$WPAD_IP" ] && echo "Error: not able to resolve wpad hostname: $WPAD" && exit
 #
 WPAD_URL="http://$WPAD/wpad.dat"
-P4="socks5h://$WPAD:2023"
-P6="socks5h://$WPAD:2026"
+P4="socks5h://$WPAD:1080"
+P6="socks5h://$WPAD:1080"
 #
 CHECK_URL="https://www.google.com/"
 SSH_OPTION="-o StrictHostKeyChecking=accept-new"
@@ -63,7 +63,7 @@ check4() {
   fi
   echo
 }
-# Network level check SS tcp port open
+# Network level check Miera socks5/tcp port open
 #
 check6() {
   echo "Info: Checking IPv6 availability ..."
