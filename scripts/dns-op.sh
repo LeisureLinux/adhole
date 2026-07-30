@@ -10,17 +10,13 @@
 UNBOUND_CONTROL="/usr/sbin/unbound-control"
 
 # ---------- 公共检查 ----------
-check_root() {
-	[ "$UID" != 0 ] && echo "Error: Need root to run!" && exit 3
-}
-
 check_unbound() {
 	[ ! -x "$UNBOUND_CONTROL" ] && echo "Error: unbound-control not found at $UNBOUND_CONTROL" && exit 1
 }
 
 # ---------- flush: 检查解析并清理缓存 ----------
 do_flush() {
-	[ -z "${1+x}" ] || [ $# -eq 0 ] && echo "Syntax: $0 flush <hostname ...>" && exit 2
+	[ $# -eq 0 ] && echo "Syntax: $0 flush <hostname ...>" && exit 2
 	check_unbound
 
 	for d in "$@"; do
@@ -49,7 +45,7 @@ do_flush() {
 
 # ---------- sshfp: 生成并注入 SSHFP 记录 ----------
 do_sshfp() {
-	[ -z "${1+x}" ] || [ $# -eq 0 ] && echo "Syntax: $0 sshfp <ssh-host>" && exit 2
+	[ $# -eq 0 ] && echo "Syntax: $0 sshfp <ssh-host>" && exit 2
 	check_unbound
 
 	SSH_HOST="$1"

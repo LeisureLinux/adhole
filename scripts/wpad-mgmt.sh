@@ -308,7 +308,6 @@ do_mieru_deconfig() {
 # ===================== test: 全链路验证测试 =====================
 
 do_test() {
-	set -e
 	VERBOSITY=0
 	[ "$1" = "-v" ] && VERBOSITY=1
 	shift
