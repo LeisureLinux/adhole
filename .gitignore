@@ -1,0 +1,11 @@
+.gitignore
+adhole.conf.zst.old
+data/deploy.sh
+.wpad
+.proxy
+data/.cache
+data/result
+
+# Ignore nested submodules and large directories
+blackweb/
+128g_sd/
