@@ -61,7 +61,7 @@ func (r *LogReader) GetPath() string      { return r.path }
 
 // Start implements a two-phase ingestion strategy:
 // 1. Scan existing content to catch up history.
-// 2. Close and reopen the file to switch to real-time tailing.
+// 2. Poll-based tail (Stat → Seek → read new lines).
 func (r *LogReader) Start(db *database.Database) error {
 	if r.path == "" {
 		fmt.Println("⚠️  No log file configured.")
@@ -101,40 +101,67 @@ func (r *LogReader) Start(db *database.Database) error {
 
 	fmt.Printf("✅ History Scan Complete: Processed %d lines, inserted %d records.\n", lineNum, matchedCount)
 
-	// Phase 2: Transition to Real-Time Tailing
-	// We must re-open and seek to end because bufio.Scanner holds state
+	// Phase 2: Poll-based tail — Stat the file every 2 seconds and read only new bytes.
 	fmt.Println("📥 Switching to Real-Time Monitoring Mode...")
-	
-	// Re-open the file to release locks/reset internal buffers
-	f, err = os.Open(r.path)
+
+	// Record current position (end of file after history scan)
+	currentOffset, err := f.Seek(0, 2)
 	if err != nil {
-		return fmt.Errorf("reopen log for tailing: %w", err)
+		return fmt.Errorf("seek end for tailing: %w", err)
 	}
+	var lastSize int64 = currentOffset // also keep track via Stat for size change detection
 
-	// Seek to current end
-	if _, err := f.Seek(0, 2); err != nil {
-		return fmt.Errorf("seek log for tailing: %w", err)
-	}
-
-	tailScanner := bufio.NewScanner(f)
-	tailBuf := make([]byte, 0, 1<<20)
-	tailScanner.Buffer(tailBuf, 4<<20)
-
-	// Blocking loop for real-time ingestion
-	for tailScanner.Scan() {
-		line := tailScanner.Text()
-		
-		rec := r.parseLine(line)
-		if rec != nil {
-			_ = db.InsertRecord(*rec)
+	for {
+		st, err := f.Stat()
+		if err != nil {
+			time.Sleep(2 * time.Second)
+			continue
 		}
-	}
 
-	if err := tailScanner.Err(); err != nil {
-		fmt.Printf("❌ Tail scanner error: %v\n", err)
-	}
+		newSize := st.Size()
 
-	return nil
+		// Handle logrotate: if file was truncated or replaced, reset offset
+		if newSize < lastSize {
+			fmt.Printf("   🔄 File rotated/cleared (old=%d, new=%d), resetting\n", lastSize, newSize)
+			currentOffset = 0
+		}
+		lastSize = newSize
+
+		readBytes := newSize - currentOffset
+		if readBytes <= 0 {
+			// Nothing new, wait and poll again
+			time.Sleep(2 * time.Second)
+			continue
+		}
+
+		// File has grown — read from where we left off until end
+		f.Seek(currentOffset, 0)
+		
+		tailScanner := bufio.NewScanner(f)
+		tailBuf := make([]byte, 0, 1<<20)
+		tailScanner.Buffer(tailBuf, 4<<20)
+
+		linesThisBatch := 0
+		for tailScanner.Scan() {
+			line := tailScanner.Text()
+			rec := r.parseLine(line)
+			if rec != nil {
+				_ = db.InsertRecord(*rec)
+				linesThisBatch++
+			}
+		}
+		if tailScanner.Err() != nil && tailScanner.Err() != io.EOF {
+			fmt.Printf("❌ Scanner error: %v\n", tailScanner.Err())
+		}
+
+		// Advance our offset by how many bytes Scanner consumed
+		currentOffset += readBytes
+		if linesThisBatch > 0 {
+			fmt.Printf("   📨 Added %d record(s) (total now %d)\n", linesThisBatch, linesThisBatch)
+		}
+
+		time.Sleep(2 * time.Second)
+	}
 }
 
 func (r *LogReader) parseLine(line string) *core.QueryRecord {
