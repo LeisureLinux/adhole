@@ -155,7 +155,7 @@ block_text() {
 	fi
 	log "Info: Grabbing $AD_URL to $TMP_FILE ..."
 	if ! $CURL "$AD_URL" >"$TMP_FILE".curl; then
-		log "Error: grab $AD_URL failed!"
+		log "Error: grab $AD_URL failed!" && exit 1
 		return
 	fi
 	echo "URL: $AD_URL" >"$TMP_FILE".status
@@ -224,7 +224,7 @@ block() {
 		fi
 	done
 	if [ $SUCCESS -eq 0 ]; then
-		log "Error: grab $AD_URL failed after $MAX_RETRY attempts!" && return
+		log "Error: grab $AD_URL failed after $MAX_RETRY attempts!" && exit 1
 	fi
 	# Pre-process, remove some IP address
 	grep -E -v '127.0.0.1|255.255.255|::' "$TMP_FILE" >"$TMP_FILE".curl
@@ -250,7 +250,7 @@ grab_oisd() {
 	fi
 	log "Info: Grabbing $AD_URL to $TMP_FILE ..."
 	if ! $CURL $AD_URL -o "$TMP_FILE"; then
-		log "Error: grab $AD_URL failed!" && return
+		log "Error: grab $AD_URL failed!" && exit 1
 	fi
 	echo "URL: $AD_URL" >"$TMP_FILE".status
 	grep "^#" "$TMP_FILE" | grep . >>"$TMP_FILE".status
