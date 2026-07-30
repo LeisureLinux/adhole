@@ -5,7 +5,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"net"
 	"os"
 	"regexp"
 	"strings"
@@ -194,31 +193,5 @@ func (r *LogReader) parseLine(line string) *core.QueryRecord {
 		}
 	}
 	
-	return nil
-}
-
-/* ------------------------------------------------------------------ */
-/*  DNSTapReader                                                       */
-/* ------------------------------------------------------------------ */
-
-type DnstapReader struct { socketPath string }
-func NewDnstapReader(p string) *DnstapReader           { return &DnstapReader{p} }
-func (d *DnstapReader) GetPath() string                 { return d.socketPath }
-func (d *DnstapReader) Start(db *database.Database) error {
-	conn, err := net.DialTimeout("unix", d.socketPath, 5*time.Second)
-	if err != nil { return err }
-	defer conn.Close()
-	go func() {
-		buf := make([]byte, 65536)
-		for {
-			n, err := conn.Read(buf)
-			if n <= 0 || err != nil {
-				return
-			}
-			db.InsertRecord(core.QueryRecord{Domain: "dnstap", Timestamp: float64(time.Now().Unix())})
-			time.Sleep(1 * time.Millisecond)
-		}
-	}()
-	select {}
 	return nil
 }

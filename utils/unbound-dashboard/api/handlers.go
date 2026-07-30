@@ -109,7 +109,7 @@ func (h *Handler) handleIndex(w http.ResponseWriter, r *http.Request) {
 
 	buf.WriteString(`</div>
 </div>
-<script>setInterval(()=>document.getElementById('clock').innerText=new Date().toLocaleString(),1000)</script>
+<script>setInterval(()=>document.getElementById('clock').innerText=new Date().toLocaleString(),1000);setInterval(()=>location.reload(),5000);</script>
 </body></html>`)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

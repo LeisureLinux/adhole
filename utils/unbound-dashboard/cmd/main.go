@@ -17,9 +17,11 @@ import (
 	"unbound-dashboard/ingestor"
 )
 
+const Version = "v0.2.25.20260731073600"
+
 func main() {
 	cfg := core.LoadConfig()
-	fmt.Printf("🚀 Starting Unbound Dashboard...\n")
+	fmt.Printf("🚀 Starting Unbound Dashboard %s...\n", Version)
 	fmt.Printf("   📂 Data Dir        : %s\n", cfg.DataDir)
 	fmt.Printf("   🎧 Listen Address  : %s:%d\n", cfg.ListenAddr, cfg.Port)
 	
@@ -46,9 +48,12 @@ func main() {
 		parser = ingestor.NewMockParser()
 	}
 
+	// 启动数据摄入，错误直接打印到 stderr
 	go func() {
+		fmt.Println("🔄 正在启动数据摄入...")
 		if err := parser.Start(db); err != nil {
-			log.Printf("Ingestor error: %v", err)
+			fmt.Printf("❌ 数据摄入错误: %v\n", err)
+			log.Fatalf("Ingestor fatal error: %v", err)
 		}
 	}()
 
