@@ -26,17 +26,74 @@ STATUS="$WORK_DIR"/result/adhole_status.txt
 GRAB_LOG="$WORK_DIR/result/grab_$(date +%Y%m%d_%H%M%S).log"
 #
 BLOCK_URL=$WORK_DIR/block_urls.txt
+THREAT_URL=$WORK_DIR/threat_urls.txt
 # the contents of the URL in the list are only domain names plaintext
 TEXT_URL=$WORK_DIR/text_urls.txt
-THREAT_URL=$WORK_DIR/threat_urls.txt
 # Self-defined block and unblock domains
 BLOCK_DOM=$WORK_DIR/block_domains.txt
 UNBLOCK_DOM=$WORK_DIR/unblock_domains.txt
 #
 ZONE_TMP_FILE=/tmp/$(basename "${ZONE_FILE}").tmp
 
+
+
+# ======================================================================
+# Argument parsing & configuration
+# ======================================================================
+UPLOAD=1          # default: yes, upload to GitHub Release
+DOWNLOAD_ONLY=0   # flag for --download-only
+
+show_help() {
+    local lang="en"
+    # Detect Chinese locale: only match zh_CN* / zh_TW*, everything else defaults to English
+    _locale="${LANG:-}${LC_ALL:-}"
+    case "$_locale" in
+        zh_CN*|zh_TW*) lang="zh" ;;
+    esac
+
+    if [ "$lang" = "zh" ]; then
+        echo "用法: $0 [选项]"
+        echo ""
+        echo "选项:"
+        echo "  -h, --help          显示此帮助信息"
+        echo "  -D, --download-only 仅下载并刷新缓存，跳过上传到 GitHub Release"
+        echo ""
+        echo "示例:"
+        echo "  $0                   默认：下载 + 压缩 + 上传至 GitHub Release"
+        echo "  $0 -D                仅拉取最新源数据，不执行上传操作"
+        echo "  $0 --download-only   同上（长选项形式）"
+    else
+        echo "Usage: $0 [OPTIONS]"
+        echo ""
+        echo "Options:"
+        echo "  -h, --help              Show this help message"
+        echo "  -D, --download-only     Download zone files only, skip upload to GitHub Release"
+        echo ""
+        echo "Examples:"
+        echo "  $0                    Default: download + compress + upload to GitHub Release"
+        echo "  $0 -D                 Download only, no upload (short form)"
+        echo "  $0 --download-only    Same as above (long form)"
+    fi
+}
+
+for arg in "$@"; do
+    case "$arg" in
+        -h|--help)
+            show_help
+            exit 0
+            ;;
+        -D|--download-only)
+            DOWNLOAD_ONLY=1
+            UPLOAD=0
+            ;;
+        *)
+            echo "Warning: unknown option "$arg", ignoring."
+            ;;
+    esac
+done
+
 cat /dev/null >"$ZONE_TMP_FILE"
-touch "$ZONE_FILE".zst "$BLOCK_URL" "$BLOCK_DOM" "$UNBLOCK_DOM" "$TEXT_URL" "$THREAT_URL"
+touch "$ZONE_FILE".zst "$BLOCK_URL" "$BLOCK_DOM" "$UNBLOCK_DOM" "$TEXT_URL"
 
 # log(): print a message to both stdout and the grab log
 log() {
@@ -58,6 +115,16 @@ clean_old_grab_logs() {
 counts() {
 	[ -r "$1" ] && echo "Info: Blocked $(grep -c "^local-zone" "$1") domains"
 }
+
+# ======================================================================
+# Pre-run: if download-only mode, clear cache to force re-fetch from internet
+# ======================================================================
+if [ $DOWNLOAD_ONLY -eq 1 ]; then
+	log "Info: --download-only mode, clearing download cache ($CACHE_DIR)..."
+	rm -f "$CACHE_DIR"/*.curl "$CACHE_DIR"/*.status
+	mkdir -p "$CACHE_DIR"
+	log "Info: Cache cleared. Will fetch all sources fresh."
+fi
 
 file_age() {
 	[ ! -r "$1" ] && return 2
@@ -96,11 +163,33 @@ block_text() {
 	[ -s "$TMP_FILE".head ] && cat "$TMP_FILE".head >>"$TMP_FILE".status || echo "# No head from source" >>"$TMP_FILE".status
 	rm "$TMP_FILE".head
 
-	# remove IPs in the list with grep -vP
-	grep -v "^#" "$TMP_FILE".curl | dos2unix -k \
-		-q | sed 's/^0\.0\.0\.0 //g' | sed 's/^127\.0\.0\.1 //g' | grep \
-		. | grep -vP '\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b' | grep -v \
-		"localhost" | sed -e 's/||//g' -e 's/\^//g' | awk '{print "local-zone: \""$1"\" always_null\n"}' | grep . >"$TMP_FILE"
+
+	# Enhanced block_text: universal format cleaner for any blacklist source
+	# Handles: hosts format, bare domains, https:// URLs, existing local-zone, Adblock
+	{
+		cat "$TMP_FILE".curl | dos2unix -k -q | sed 's/\r$//' | \
+		sed -n '/^[[:space:]]*local-zone:/p' | grep -c '.' > /tmp/_bt_lz || true; \
+		_has_lz=$(cat /tmp/_bt_lz); rm -f /tmp/_bt_lz; \
+		if [ "$_has_lz" -gt 0 ]; then
+			{
+				sed -n 's/.*local-zone:[[:space:]]*"\([^"]*\)".*/\1/p' "$TMP_FILE".curl; \
+				grep -v '^local-zone:' "$TMP_FILE".curl | sed 's/^0\.0\.0\.0 //g;s/^127\.0\.0\.1 //g'
+			} | grep '\.' | sed 's/[[:space:]]*$//; s/^[[:space:]]*//' | \
+			grep -vE '^[#!]' | sed -e 's/||//g' -e 's/\^//g' | sed 's/^\*\.\?//' | \
+			sed -E 's#^(https?://)?##; s#/+$##; s#^www\.##' | \
+			awk '{if ($0 ~ /\./ && length($0) > 2) print "local-zone: \"" $0 "\" always_null\n"}' | \
+			grep '"[^ ]*"'
+		else
+			grep -vE '^[[:space:]]*(#|!|$)' "$TMP_FILE".curl | \
+			sed 's/^0\.0\.0\.0 //g; s/^127\.0\.0\.1 //g' | \
+			grep '\.' | grep -vP '\b(?:[0-9]{1,3}\.){3}[0-9]{3}\b' | grep -v "localhost" | \
+			sed -e 's/||//g' -e 's/\^//g' | sed 's/^\*\.\?//' | \
+			sed -E 's#^(https?://)?##; s#/+$##; s#^www\.##' | \
+			awk '{if ($0 ~ /\./ && length($0) > 2) print "local-zone: \"" $0 "\" always_null\n"}' | \
+			grep '"[^ ]*"'
+		fi
+	} >"$TMP_FILE"
+
 	counts "$TMP_FILE" | tee -a "$TMP_FILE.status"
 	rm "$TMP_FILE.curl"
 	cat "$TMP_FILE" >>"$ZONE_TMP_FILE"
@@ -119,9 +208,23 @@ block() {
 		return
 	fi
 	log "Info: Grabbing $AD_URL to $TMP_FILE ..."
-	if ! $CURL "$AD_URL" >"$TMP_FILE"; then
-		# 	[ $? != 0 ] &&
-		log "Error: grab $AD_URL failed!" && return
+	# Retry loop (GitHub raw is flaky behind the GFW)
+	MAX_RETRY=3
+	RETRY=0
+	SUCCESS=0
+	while [ $RETRY -lt $MAX_RETRY ]; do
+		if $CURL "$AD_URL" >"$TMP_FILE"; then
+			SUCCESS=1
+			break
+		fi
+		RETRY=$((RETRY + 1))
+		if [ $RETRY -lt $MAX_RETRY ]; then
+			log "Warning: grab attempt $RETRY failed for $AD_URL, retrying in 5s..."
+			sleep 5
+		fi
+	done
+	if [ $SUCCESS -eq 0 ]; then
+		log "Error: grab $AD_URL failed after $MAX_RETRY attempts!" && return
 	fi
 	# Pre-process, remove some IP address
 	grep -E -v '127.0.0.1|255.255.255|::' "$TMP_FILE" >"$TMP_FILE".curl
@@ -204,10 +307,11 @@ done
 # fi
 
 
-# Threat Intelligence sources (adblock-style domain lists)
-for url in $(grep -v "^#" "$THREAT_URL"); do
+# Process threat intelligence sources (format auto-detection)
+for url in $(grep -v "^#" "$THREAT_URL" 2>/dev/null); do
 	block_text "$url"
 done
+
 log "Info: Add local block domain list ..."
 grep -v "^#" "$BLOCK_DOM" | grep . | awk '{print "local-zone: \"" $1 "\" always_null"}' >>"$ZONE_TMP_FILE"
 #
@@ -238,6 +342,12 @@ else
 	log "Info: compressing $ZONE_FILE ..."
 	zst "$ZONE_FILE"
 	gen_status
-	"${WORK_DIR}"/gh-upload.sh
+	# Upload to GitHub Release (unless --download-only was specified)
+	if [ $UPLOAD -eq 1 ]; then
+		log "Info: uploading to GitHub Release..."
+		(cd "$(dirname "$(readlink -f "$0")")/.." && bash scripts/release.sh upload)
+	else
+		log "Info: skipping upload (--download-only mode)"
+	fi
 fi
 rm /tmp/check.conf
