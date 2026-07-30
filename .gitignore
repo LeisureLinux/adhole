@@ -6,6 +6,4 @@ data/deploy.sh
 data/.cache
 data/result
 
-# Ignore nested submodules and large directories
-blackweb/
-128g_sd/
+utils/unbound-dashboard/bins/
