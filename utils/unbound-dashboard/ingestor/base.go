@@ -2,36 +2,66 @@
 package ingestor
 
 import (
+	"bufio"
 	"fmt"
+	"io"
+	"net"
 	"os"
+	"regexp"
+	"strings"
 	"time"
 
 	"unbound-dashboard/core"
 	"unbound-dashboard/database"
 )
 
-// Parser interface for different data sources (logs, dnstap).
+/* ================================================================== */
+/*  Parser interface                                                   */
+/* ================================================================== */
+
 type Parser interface {
 	Start(db *database.Database) error
 	GetPath() string
 }
 
-// LogReader implements log parsing for standard unbound verbose logs.
+/* ------------------------------------------------------------------ */
+/*  MockParser                                                         */
+/* ------------------------------------------------------------------ */
+
+type MockParser struct{}
+
+func NewMockParser() *MockParser          { return &MockParser{} }
+func (m *MockParser) GetPath() string     { return "none" }
+func (m *MockParser) Start(db *database.Database) error {
+	fmt.Println("ℹ️  No log source configured; using mock parser.")
+	select {}
+}
+
+/* ------------------------------------------------------------------ */
+/*  LogReader: real-time tailer of unbound verbose-log                 */
+/* ------------------------------------------------------------------ */
+
 type LogReader struct {
-	path string
+	path        string
+	syslogRe    *regexp.Regexp
+	queryOnlyRe *regexp.Regexp
 }
 
-// NewLogReader creates a new parser for text logs.
 func NewLogReader(path string) *LogReader {
-	return &LogReader{path: path}
+	return &LogReader{
+		path:        path,
+		// 匹配 Debian/Ubuntu syslog 格式: date host[pid]: level: ip domain QTYPE IN RCODE rest
+		syslogRe:    regexp.MustCompile(`^(\w+\s+\d+\s+[\d:]+)\s+(\S+)\[(\d+:\d+)\]\s+(\w+):\s+(\S+)\s+(\S+)\s+(\S+)\s+IN\s+(\S+)\s+(.*)$`),
+		// 匹配无返回码的行: date host[pid]: level: ip domain QTYPE IN
+		queryOnlyRe: regexp.MustCompile(`^(\w+\s+\d+\s+[\d:]+)\s+(\S+)\[(\d+:\d+)\]\s+(\w+):\s+(\S+)\s+(\S+)\s+(\S+)\s+IN$`),
+	}
 }
 
-// GetPath returns the log file path.
-func (r *LogReader) GetPath() string {
-	return r.path
-}
+func (r *LogReader) GetPath() string      { return r.path }
 
-// Start begins listening to the log file (placeholder for production implementation).
+// Start implements a two-phase ingestion strategy:
+// 1. Scan existing content to catch up history.
+// 2. Close and reopen the file to switch to real-time tailing.
 func (r *LogReader) Start(db *database.Database) error {
 	if r.path == "" {
 		fmt.Println("⚠️  No log file configured.")
@@ -40,35 +70,133 @@ func (r *LogReader) Start(db *database.Database) error {
 
 	f, err := os.Open(r.path)
 	if err != nil {
-		return fmt.Errorf("failed to open log %s: %w", r.path, err)
+		return fmt.Errorf("open log %s: %w", r.path, err)
 	}
 	defer f.Close()
 
-	fmt.Printf("📥 Watching log file: %s\n", r.path)
-	// Here we would use tailer/tail package or io.Reader
-	for {
-		// Placeholder for reading lines
-		time.Sleep(5 * time.Second) 
+	fmt.Printf("📥 Starting Ingestion (History Scan)...\n")
+
+	lineNum := 0
+	matchedCount := 0
+	scanner := bufio.NewScanner(f)
+	buf := make([]byte, 0, 1<<20) // 1 MB buffer
+	scanner.Buffer(buf, 4<<20)
+
+	// Phase 1: Read all existing lines
+	for scanner.Scan() {
+		line := scanner.Text()
+		lineNum++
+
+		rec := r.parseLine(line)
+		if rec != nil {
+			matchedCount++
+			_ = db.InsertRecord(*rec)
+		}
 	}
+
+	// Check for errors during scan (ignoring io.EOF is normal)
+	if err := scanner.Err(); err != nil && err != io.EOF {
+		return fmt.Errorf("scan log: %w", err)
+	}
+
+	fmt.Printf("✅ History Scan Complete: Processed %d lines, inserted %d records.\n", lineNum, matchedCount)
+
+	// Phase 2: Transition to Real-Time Tailing
+	// We must re-open and seek to end because bufio.Scanner holds state
+	fmt.Println("📥 Switching to Real-Time Monitoring Mode...")
+	
+	// Re-open the file to release locks/reset internal buffers
+	f, err = os.Open(r.path)
+	if err != nil {
+		return fmt.Errorf("reopen log for tailing: %w", err)
+	}
+
+	// Seek to current end
+	if _, err := f.Seek(0, 2); err != nil {
+		return fmt.Errorf("seek log for tailing: %w", err)
+	}
+
+	tailScanner := bufio.NewScanner(f)
+	tailBuf := make([]byte, 0, 1<<20)
+	tailScanner.Buffer(tailBuf, 4<<20)
+
+	// Blocking loop for real-time ingestion
+	for tailScanner.Scan() {
+		line := tailScanner.Text()
+		
+		rec := r.parseLine(line)
+		if rec != nil {
+			_ = db.InsertRecord(*rec)
+		}
+	}
+
+	if err := tailScanner.Err(); err != nil {
+		fmt.Printf("❌ Tail scanner error: %v\n", err)
+	}
+
+	return nil
 }
 
-// InsertRecord inserts a parsed query record into the database.
-func (r *LogReader) InsertRecord(db *database.Database, record core.QueryRecord) error {
-	return db.InsertRecord(record)
+func (r *LogReader) parseLine(line string) *core.QueryRecord {
+	var m []string
+	
+	// --- Pattern 1: Full line with RCODE -----------------------------
+	if m = r.syslogRe.FindStringSubmatch(line); len(m) > 8 {
+		rcode := strings.TrimSpace(m[8])
+		
+		rec := &core.QueryRecord{
+			Domain:    strings.TrimSuffix(m[6], "."),
+			ClientIP:  m[5],
+			QType:     m[7],
+			RCode:     rcode,
+			Response:  "Reply",
+			Timestamp: float64(time.Now().Unix()),
+		}
+		
+		if rcode != "NOERROR" && rcode != "SERVFAIL" && rcode != "FORMERR" && rcode != "" {
+			rec.Blocked = true
+			rec.BlockReason = rcode
+		}
+		
+		return rec
+	}
+	
+	// --- Pattern 2: Query only without RCODE -------------------------
+	if m = r.queryOnlyRe.FindStringSubmatch(line); len(m) > 7 {
+		return &core.QueryRecord{
+			Domain:    strings.TrimSuffix(m[6], "."),
+			ClientIP:  m[5],
+			QType:     m[7],
+			Response:  "Query",
+			Timestamp: float64(time.Now().Unix()),
+		}
+	}
+	
+	return nil
 }
 
-// MockParser is a no-op parser used when no log source is configured.
-type MockParser struct{}
+/* ------------------------------------------------------------------ */
+/*  DNSTapReader                                                       */
+/* ------------------------------------------------------------------ */
 
-func NewMockParser() *MockParser {
-	return &MockParser{}
-}
-
-func (m *MockParser) GetPath() string {
-	return "none"
-}
-
-func (m *MockParser) Start(db *database.Database) error {
-	fmt.Println("ℹ️  No log source configured; mock parser active.")
-	select {} // block forever to keep goroutine alive
+type DnstapReader struct { socketPath string }
+func NewDnstapReader(p string) *DnstapReader           { return &DnstapReader{p} }
+func (d *DnstapReader) GetPath() string                 { return d.socketPath }
+func (d *DnstapReader) Start(db *database.Database) error {
+	conn, err := net.DialTimeout("unix", d.socketPath, 5*time.Second)
+	if err != nil { return err }
+	defer conn.Close()
+	go func() {
+		buf := make([]byte, 65536)
+		for {
+			n, err := conn.Read(buf)
+			if n <= 0 || err != nil {
+				return
+			}
+			db.InsertRecord(core.QueryRecord{Domain: "dnstap", Timestamp: float64(time.Now().Unix())})
+			time.Sleep(1 * time.Millisecond)
+		}
+	}()
+	select {}
+	return nil
 }

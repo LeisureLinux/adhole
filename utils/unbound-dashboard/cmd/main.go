@@ -1,3 +1,4 @@
+// Package main is the entry point for Unbound Dashboard.
 package main
 
 import (
@@ -18,6 +19,18 @@ import (
 
 func main() {
 	cfg := core.LoadConfig()
+	fmt.Printf("🚀 Starting Unbound Dashboard...\n")
+	fmt.Printf("   📂 Data Dir        : %s\n", cfg.DataDir)
+	fmt.Printf("   🎧 Listen Address  : %s:%d\n", cfg.ListenAddr, cfg.Port)
+	
+	if cfg.DNSTapPath != "" {
+		fmt.Printf("   🦐 DNSTap Socket   : %s\n", cfg.DNSTapPath)
+	} else if cfg.LogFilePath != "" {
+		fmt.Printf("   📄 Log File        : %s\n", cfg.LogFilePath)
+	} else {
+		fmt.Println("   ℹ️  Mode             : Mock Parser (no source configured)")
+	}
+
 	db, err := database.New(cfg.DataDir)
 	if err != nil {
 		log.Fatalf("❌ Database init failed: %v", err)
@@ -26,12 +39,10 @@ func main() {
 
 	var parser ingestor.Parser
 	if cfg.DNSTapPath != "" {
-		parser = ingestor.NewLogReader("") 
-		log.Println("⚠️  DNSTap mode not implemented yet.")
+		parser = ingestor.NewDnstapReader(cfg.DNSTapPath)
 	} else if cfg.LogFilePath != "" {
 		parser = ingestor.NewLogReader(cfg.LogFilePath)
 	} else {
-		log.Println("ℹ️  Using internal mock parser.")
 		parser = ingestor.NewMockParser()
 	}
 

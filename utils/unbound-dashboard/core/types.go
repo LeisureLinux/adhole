@@ -28,7 +28,7 @@ type QueryRecord struct {
 	CacheHit     bool    // Was resolved from cache
 	Blocked      bool    // Was blocked
 	BlockReason  string  // Reason for blocking
-	DNSSECStatus string  // DNSSEC status (SECURE, INSECURE...)
+	DNSSECStatus string  // DNSSEC status
 }
 
 // LoadConfig parses command line flags and returns a config instance.
@@ -36,7 +36,7 @@ func LoadConfig() *Config {
 	cfg := &Config{
 		ListenAddr:   "127.0.0.1",
 		Port:         9153,
-		DataDir:      "/var/lib/unbound-dashboard",
+		DataDir:      "/tmp/unbound-data",
 		CacheTTLDays: 90,
 	}
 
