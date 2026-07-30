@@ -28,6 +28,7 @@ GRAB_LOG="$WORK_DIR/result/grab_$(date +%Y%m%d_%H%M%S).log"
 BLOCK_URL=$WORK_DIR/block_urls.txt
 # the contents of the URL in the list are only domain names plaintext
 TEXT_URL=$WORK_DIR/text_urls.txt
+THREAT_URL=$WORK_DIR/threat_urls.txt
 # Self-defined block and unblock domains
 BLOCK_DOM=$WORK_DIR/block_domains.txt
 UNBLOCK_DOM=$WORK_DIR/unblock_domains.txt
@@ -35,7 +36,7 @@ UNBLOCK_DOM=$WORK_DIR/unblock_domains.txt
 ZONE_TMP_FILE=/tmp/$(basename "${ZONE_FILE}").tmp
 
 cat /dev/null >"$ZONE_TMP_FILE"
-touch "$ZONE_FILE".zst "$BLOCK_URL" "$BLOCK_DOM" "$UNBLOCK_DOM" "$TEXT_URL"
+touch "$ZONE_FILE".zst "$BLOCK_URL" "$BLOCK_DOM" "$UNBLOCK_DOM" "$TEXT_URL" "$THREAT_URL"
 
 # log(): print a message to both stdout and the grab log
 log() {
@@ -202,6 +203,11 @@ done
 #     done
 # fi
 
+
+# Threat Intelligence sources (adblock-style domain lists)
+for url in $(grep -v "^#" "$THREAT_URL"); do
+	block_text "$url"
+done
 log "Info: Add local block domain list ..."
 grep -v "^#" "$BLOCK_DOM" | grep . | awk '{print "local-zone: \"" $1 "\" always_null"}' >>"$ZONE_TMP_FILE"
 #
@@ -218,7 +224,7 @@ EOH
 exclude_domain=$(grep -v "^#" "$UNBLOCK_DOM" | xargs | tr " " "|")
 # e.g. exclude_domain="as.weixin.qq.com|pandora.xiaomi.com|cm.bilibili.com"
 log "Info: deduplicating ..."
-time grep -v "0.0.0.0" "$ZONE_TMP_FILE" | sed -e 's/\."/"/g' | grep -E -v "$exclude_domain" | tr "[:upper:]" "[:lower:]" | $SORT -u >>"$ZONE_FILE"
+time grep -v "0.0.0.0" "$ZONE_TMP_FILE" | sed -e 's/\."/"/g' | grep -E -v "$exclude_domain" | tr "[:upper:]" "[:lower:]" | awk -F"\"" '$2 ~ /^[a-zA-Z0-9.-]+$/ && $2 ~ /\./ && length($2)>2 {print}' | $SORT -u >>"$ZONE_FILE"
 rm "$ZONE_TMP_FILE"
 log "Info: results after deduplication:"
 counts "$ZONE_FILE"

@@ -1,5 +1,5 @@
 # Block URL list from Internet
 # !!! Comments must start with hash on first column
-# https://raw.githubusercontent.com/jdlingyu/ad-wars/master/hosts
+# !!! This file only holds HOSTS format sources (processed by block())
 https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn/hosts
 # !!! this one blocked whole amazonaws.com site: https://blocklistproject.github.io/Lists/adobe.txt

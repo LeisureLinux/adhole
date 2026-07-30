@@ -1,0 +1,16 @@
+# Threat Intelligence sources (processed by block_text with format auto-detection)
+# Malware & Phishing
+https://malware-filter.gitlab.io/malware-filter/phishing-filter-hosts.txt
+https://phishing.army/download/phishing_army_blocklist_extended.txt
+https://bitbucket.org/ethanr/dns-blacklists/raw/master/bad_lists/Mandiant_APT1_Report_Appendix_D.txt
+https://gitlab.com/malware-filter/urlhaus-filter/-/raw/master/urlhaus-filter.txt
+# Stalkerware & Spyware
+https://raw.githubusercontent.com/AssoEchap/stalkerware-indicators/master/generated/hosts
+https://raw.githubusercontent.com/crazy-max/WindowsSpyBlocker/master/data/hosts/spy.txt
+# Hacked Domains
+https://raw.githubusercontent.com/mitchellkrogza/The-Big-List-of-Hacked-Malware-Web-Sites/master/hacked-domains.list
+# Curated Malware Filters
+https://v.firebog.net/hosts/Prigent-Malware.txt
+https://v.firebog.net/hosts/RPiList-Malware.txt
+# OpenPhish
+https://openphish.com/feed.txt
