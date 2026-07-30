@@ -74,7 +74,6 @@ func (r *LogReader) Start(db *database.Database) error {
 	}
 	defer f.Close()
 
-	fmt.Printf("📥 Starting Ingestion (History Scan)...\n")
 
 	lineNum := 0
 	matchedCount := 0
@@ -99,10 +98,8 @@ func (r *LogReader) Start(db *database.Database) error {
 		return fmt.Errorf("scan log: %w", err)
 	}
 
-	fmt.Printf("✅ History Scan Complete: Processed %d lines, inserted %d records.\n", lineNum, matchedCount)
 
 	// Phase 2: Poll-based tail — Stat the file every 2 seconds and read only new bytes.
-	fmt.Println("📥 Switching to Real-Time Monitoring Mode...")
 
 	// Record current position (end of file after history scan)
 	currentOffset, err := f.Seek(0, 2)
@@ -122,7 +119,6 @@ func (r *LogReader) Start(db *database.Database) error {
 
 		// Handle logrotate: if file was truncated or replaced, reset offset
 		if newSize < lastSize {
-			fmt.Printf("   🔄 File rotated/cleared (old=%d, new=%d), resetting\n", lastSize, newSize)
 			currentOffset = 0
 		}
 		lastSize = newSize
@@ -157,7 +153,6 @@ func (r *LogReader) Start(db *database.Database) error {
 		// Advance our offset by how many bytes Scanner consumed
 		currentOffset += readBytes
 		if linesThisBatch > 0 {
-			fmt.Printf("   📨 Added %d record(s) (total now %d)\n", linesThisBatch, linesThisBatch)
 		}
 
 		time.Sleep(2 * time.Second)
