@@ -1,12 +1,12 @@
 #!/bin/sh
-# release.sh — 构建+发布管线（合并版）
+# main.sh — 构建 + 发布管线（合并版）
 # 来源：data/gh-upload.sh + pull_zone.sh
 #
 # 用法:
-#   ./release.sh build        # 运行 adhole.sh 生成 zone 文件
-#   ./release.sh upload       # 将产物上传到 GitHub Release
-#   ./release.sh pull         # 从 GitHub 拉取并重载 zone 文件
-#   ./release.sh sync         # 三步流水线：build → upload → pull
+#   ./main.sh build        # 运行 build_adhole.sh 生成 zone 文件
+#   ./main.sh upload       # 将产物上传到 GitHub Release
+#   ./main.sh pull         # 从 GitHub 拉取并重载 zone 文件
+#   ./main.sh sync         # 三步流水线：build → upload → pull
 
 set -e
 
@@ -18,30 +18,35 @@ STATUS_URL="${ZONE_URL%/}/adhole_status.txt"
 CONF_DIR="/etc/unbound/adhole"
 DAYS=7
 
-# ---------- build: 构建 zone 文件 ----------
-do_build() {
+# ---------- 辅助函数 ----------
+get_script_dir() {
 	SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+	echo "$SCRIPT_DIR"
+}
+
+do_build() {
+	SCRIPT_DIR=$(get_script_dir)
 	DATA_DIR="$SCRIPT_DIR/data"
 	WORK_DIR="$DATA_DIR/result"
+	ADHOLE_SCRIPT="$SCRIPT_DIR/scripts/build_adhole.sh"
 
 	echo "Info: Building adhole zone config..."
 	mkdir -p "$WORK_DIR"
 	cd "$WORK_DIR"
 
-	if ! [ -x "$DATA_DIR/adhole.sh" ]; then
-		echo "Error: data/adhole.sh not found or not executable!"
+	if ! [ -x "$ADHOLE_SCRIPT" ]; then
+		echo "Error: scripts/build_adhole.sh not found or not executable!"
 		exit 1
 	fi
 
-	"$DATA_DIR/adhole.sh"
+	"$ADHOLE_SCRIPT"
 	echo "Build complete."
 }
 
 # ---------- upload: 上传到 GitHub Release ----------
 do_upload() {
-	SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-	DATA_DIR="$SCRIPT_DIR/data"
-	WORK_DIR="$DATA_DIR/result"
+	SCRIPT_DIR=$(get_script_dir)
+	WORK_DIR="$SCRIPT_DIR/data/result"
 
 	[ ! -x /usr/bin/gh ] && echo "Error: github cli (gh) not found!" && exit 1
 	gh auth status >/dev/null || { echo "Error: gh auth not configured!" && exit 1; }
@@ -141,15 +146,15 @@ case "${1:-help}" in
 		do_sync
 		;;
 	help|--help|-h)
-		echo "构建+发布管线（release.sh）"
+		echo "构建 + 发布管线（main.sh）"
 		echo ""
 		echo "用法:"
-		echo "  release.sh build      运行 adhole.sh 生成 adblock zone 配置文件"
-		echo "  release.sh upload     将产物上传到 GitHub Release"
-		echo "  release.sh pull [file] 从 GitHub 拉取 zone 文件并重载 Unbound"
+		echo "  main.sh build      运行 build_adhole.sh 生成 adblock zone 配置文件"
+		echo "  main.sh upload     将产物上传到 GitHub Release"
+		echo "  main.sh pull [file] 从 GitHub 拉取 zone 文件并重载 Unbound"
 		echo "                         可指定本地文件 path 直接解压部署"
-		echo "  release.sh sync       三步流水线: build → upload → pull"
-		echo "  release.sh help       显示此帮助"
+		echo "  main.sh sync       三步流水线：build → upload → pull"
+		echo "  main.sh help       显示此帮助"
 		;;
 	*)
 		echo "Unknown subcommand: $1"

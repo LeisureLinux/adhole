@@ -12,7 +12,12 @@ PROXY=""
 [ ! -x /usr/bin/parsort ] && echo "Warning: missing package: parallel" && SORT='sort'
 [ ! -x /usr/bin/zst ] && echo "Error: to save space, please install zst package" && exit 1
 
-WORK_DIR=$(dirname "$0")
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# If script is in scripts/, data dir is parent/data
+case "$SCRIPT_DIR" in
+*/scripts) WORK_DIR="$SCRIPT_DIR/../data" ;;
+*) WORK_DIR="$SCRIPT_DIR" ;;
+esac
 [ ! -d "$WORK_DIR"/result ] && mkdir "$WORK_DIR"/result
 [ -s "$HOME/.proxy" ] && PROXY="-x $(cat "$HOME/.proxy")"
 CURL="/usr/bin/curl ${PROXY} ${CURL_TIME} --compressed -sSL"
@@ -40,8 +45,6 @@ ZONE_TMP_FILE=/tmp/$(basename "${ZONE_FILE}").tmp
 # ======================================================================
 # Argument parsing & configuration
 # ======================================================================
-UPLOAD=1          # default: yes, upload to GitHub Release
-DOWNLOAD_ONLY=0   # flag for --download-only
 
 show_help() {
     local lang="en"
@@ -54,25 +57,16 @@ show_help() {
     if [ "$lang" = "zh" ]; then
         echo "用法: $0 [选项]"
         echo ""
-        echo "选项:"
-        echo "  -h, --help          显示此帮助信息"
-        echo "  -D, --download-only 仅下载并刷新缓存，跳过上传到 GitHub Release"
-        echo ""
-        echo "示例:"
-        echo "  $0                   默认：下载 + 压缩 + 上传至 GitHub Release"
-        echo "  $0 -D                仅拉取最新源数据，不执行上传操作"
-        echo "  $0 --download-only   同上（长选项形式）"
+        echo "说明："
+        echo "  从多个黑名单源抓取域名，去重后生成 Unbound always_null zone 文件。"
+        echo "  使用 scripts/main.sh sync 可完成 build/upload/pull 全链路。"
     else
-        echo "Usage: $0 [OPTIONS]"
+        echo "Usage: $0"
         echo ""
-        echo "Options:"
-        echo "  -h, --help              Show this help message"
-        echo "  -D, --download-only     Download zone files only, skip upload to GitHub Release"
-        echo ""
-        echo "Examples:"
-        echo "  $0                    Default: download + compress + upload to GitHub Release"
-        echo "  $0 -D                 Download only, no upload (short form)"
-        echo "  $0 --download-only    Same as above (long form)"
+        echo "Description:"
+        echo "  Fetches domains from multiple blacklist sources, deduplicates,"
+        echo "  and generates a Unbound always_null zone file."
+        echo "  Use scripts/main.sh sync for the full build/upload/pull pipeline."
     fi
 }
 
@@ -81,10 +75,6 @@ for arg in "$@"; do
         -h|--help)
             show_help
             exit 0
-            ;;
-        -D|--download-only)
-            DOWNLOAD_ONLY=1
-            UPLOAD=0
             ;;
         *)
             echo "Warning: unknown option "$arg", ignoring."
@@ -117,15 +107,6 @@ counts() {
 }
 
 # ======================================================================
-# Pre-run: if download-only mode, clear cache to force re-fetch from internet
-# ======================================================================
-if [ $DOWNLOAD_ONLY -eq 1 ]; then
-	log "Info: --download-only mode, clearing download cache ($CACHE_DIR)..."
-	rm -f "$CACHE_DIR"/*.curl "$CACHE_DIR"/*.status
-	mkdir -p "$CACHE_DIR"
-	log "Info: Cache cleared. Will fetch all sources fresh."
-fi
-
 file_age() {
 	[ ! -r "$1" ] && return 2
 	local file_age
@@ -223,6 +204,10 @@ block() {
 			sleep 5
 		fi
 	done
+	if [ -z "$FINAL_COUNT" ]; then
+		FINAL_COUNT=$(grep -c "^local-zone" "$ZONE_FILE" 2>/dev/null || echo 0)
+	fi
+	echo "Info: Blocked ${FINAL_COUNT} domains (final deduplicated)" >>"$STATUS"
 	if [ $SUCCESS -eq 0 ]; then
 		log "Error: grab $AD_URL failed after $MAX_RETRY attempts!" && exit 1
 	fi
@@ -259,6 +244,7 @@ grab_oisd() {
 }
 
 gen_status() {
+	local FINAL_COUNT="${1:-}"
 	echo "# =========================================" >"$STATUS"
 	(
 		echo "# LeisureLinux Adhole block domains sources "
@@ -270,6 +256,10 @@ gen_status() {
 		grep . "$s" >>"$STATUS"
 		echo >>"$STATUS"
 	done
+	if [ -z "$FINAL_COUNT" ]; then
+		FINAL_COUNT=$(grep -c "^local-zone" "$ZONE_FILE" 2>/dev/null || echo 0)
+	fi
+	echo "Info: Blocked ${FINAL_COUNT} domains (final deduplicated)" >>"$STATUS"
 	cat $STATUS >> $GRAB_LOG
 }
 #
@@ -339,15 +329,9 @@ EOF
 if ! /usr/sbin/unbound-checkconf /tmp/check.conf 2>/dev/null; then
 	log "Error: Found error in $ZONE_FILE"
 else
+	FINAL_COUNT=$(grep -c "^local-zone" "$ZONE_FILE")
 	log "Info: compressing $ZONE_FILE ..."
 	zst "$ZONE_FILE"
-	gen_status
-	# Upload to GitHub Release (unless --download-only was specified)
-	if [ $UPLOAD -eq 1 ]; then
-		log "Info: uploading to GitHub Release..."
-		(cd "$(dirname "$(readlink -f "$0")")/.." && bash scripts/release.sh upload)
-	else
-		log "Info: skipping upload (--download-only mode)"
-	fi
+	gen_status "$FINAL_COUNT"
 fi
 rm /tmp/check.conf
