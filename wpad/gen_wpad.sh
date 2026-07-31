@@ -147,8 +147,23 @@ if [ $GENPAC_EXIT_CODE -ne 0 ]; then
     exit 3
 fi
 
-GOOGLE=$(pactester -p $WPAD -u https://www.google.com)
-BAIDU=$(pactester -p $WPAD -u https://www.baidu.com)
-[ "$GOOGLE" != "$PAC" -o "$BAIDU" != "DIRECT" ] && echo "Error: Looked like $WPAD file not working correctly \
-        Google return [$GOOGLE] should be [$PAC], Baidu should return [$BAIDU] " && cp $WPAD.bak $WPAD && exit 7
-echo "Info: $WPAD generated."
+# 验证 PAC 文件规则
+# 使用 tr 去除可能的回车换行符，确保字符串比较准确
+GOOGLE=$(pactester -p $WPAD -u https://www.google.com | tr -d '\r\n')
+BAIDU=$(pactester -p $WPAD -u https://www.baidu.com | tr -d '\r\n')
+
+echo "Info: 验证 PAC 文件规则..."
+echo "  Google (https://www.google.com) 返回: [$GOOGLE]"
+echo "  Baidu  (https://www.baidu.com)  返回: [$BAIDU]"
+echo "  期望 Google 返回: [$PAC]"
+echo "  期望 Baidu  返回: [DIRECT]"
+
+if [ "$GOOGLE" != "$PAC" ] || [ "$BAIDU" != "DIRECT" ]; then
+    echo "Error: $WPAD 文件规则验证失败！"
+    echo "  Google 实际返回: [$GOOGLE] (期望: [$PAC])"
+    echo "  Baidu 实际返回:  [$BAIDU] (期望: [DIRECT])"
+    echo "Info: 正在恢复备份文件 $WPAD.bak ..."
+    cp $WPAD.bak $WPAD
+    exit 7
+fi
+echo "Info: $WPAD 生成并验证成功。"
