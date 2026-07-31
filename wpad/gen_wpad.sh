@@ -130,17 +130,21 @@ echo "Info: PAC 文件已更新至: $WPAD"
 # 5. 验证 PAC 文件规则
 GOOGLE=$(pactester -p "$WPAD" -u https://www.google.com | tr -d '\r\n') || true
 BAIDU=$(pactester -p "$WPAD" -u https://www.baidu.com | tr -d '\r\n') || true
+OPENAI=$(pactester -p "$WPAD" -u https://chatgpt.com | tr -d '\r\n') || true
 
 echo "Info: 验证 PAC 文件规则..."
 echo "  Google (https://www.google.com) 返回: [$GOOGLE]"
 echo "  Baidu  (https://www.baidu.com)  返回: [$BAIDU]"
+echo "  OpenAI (https://chatgpt.com)    返回: [$OPENAI]"
 echo "  期望 Google 返回: [$PAC]"
 echo "  期望 Baidu  返回: [DIRECT]"
+echo "  期望 OpenAI 返回: [$PAC]"
 
-if [ "$GOOGLE" != "$PAC" ] || [ "$BAIDU" != "DIRECT" ]; then
+if [ "$GOOGLE" != "$PAC" ] || [ "$BAIDU" != "DIRECT" ] || [ "$OPENAI" != "$PAC" ]; then
     echo "Error: $WPAD 文件规则验证失败！"
     echo "  Google 实际返回: [$GOOGLE] (期望: [$PAC])"
     echo "  Baidu 实际返回:  [$BAIDU] (期望: [DIRECT])"
+    echo "  OpenAI 实际返回: [$OPENAI] (期望: [$PAC])"
     echo "Info: 正在恢复备份文件 $WPAD.bak ..."
     cp "$WPAD.bak" "$WPAD"
     exit 7
