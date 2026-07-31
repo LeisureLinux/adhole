@@ -3,8 +3,8 @@ set -euo pipefail
 
 # goproxy http 代理的端口(wpad 必须启用 http 代理)
 HTTP_PORT=8888
-# The SS_CFG file should be chmod 640, root:axu
-SS_CFG="/etc/shadowsocks-libev/my_ss.json"
+# SOCKS5 代理端口 (请根据实际使用的代理软件修改)
+PRX_PORT=1080
 
 WPAD="/var/www/html/wpad/wpad.dat"
 USER_RULE_FILE="/tmp/custom-user-rules.txt"
@@ -56,15 +56,6 @@ if [ -z "$IP" ]; then
 fi
 echo "$HNAME. was setup as $IP"
 
-if [ ! -r "$SS_CFG" ]; then
-    echo "Error: missing shadowsocks config file, $SS_CFG"
-    exit 1
-fi
-PRX_PORT=$(jq -r ".local_port" < "$SS_CFG") || true
-if [ -z "$PRX_PORT" ]; then
-    echo "Error: Missing proxy port number"
-    exit 1
-fi
 echo "Info: proxy port: $PRX_PORT"
 PROXY="socks5 $IP:$PRX_PORT"
 
