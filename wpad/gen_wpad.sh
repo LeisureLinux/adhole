@@ -13,6 +13,21 @@ USER_RULE_FILE="/tmp/custom-user-rules.txt"
 GFWLIST_URL="https://cdn.jsdelivr.net/gh/gfwlist/gfwlist/gfwlist.txt"
 
 # ##########################
+usage() {
+    cat <<EOF
+用法: $0 [选项]
+
+选项:
+  -g, --generate    生成并更新 PAC 文件，然后进行验证
+  -t, --test        仅验证现有的 PAC 文件规则
+  -h, --help        显示此帮助信息
+
+示例:
+  $0 -g             # 生成新的 wpad.dat
+  $0 -t             # 测试当前的 wpad.dat
+EOF
+}
+
 chk_pkg() {
 	# 检查必备的软件包
 	PROG="libpacparser1 haveged"
@@ -59,6 +74,82 @@ get_network_info() {
     PAC="PROXY $IP:$HTTP_PORT; $PROXY"
 }
 
+fetch_rules() {
+    echo "Info: 正在获取并合并代理规则..."
+    # 1. 动态生成/更新自定义规则文件 (提取 AI 与 Telegram 等追加规则)
+    cat <<'EOF' > "$USER_RULE_FILE"
+! AI & LLM Services
+||chatgpt.com
+||openai.com
+||oaistatic.com
+||oaiusercontent.com
+||claude.ai
+||anthropic.com
+||aistudio.google.com
+||generativelanguage.googleapis.com
+
+! Developer & CDN
+||raw.githubusercontent.com
+||objects.githubusercontent.com
+||registry-1.docker.io
+||production.cloudflare.docker.com
+
+! Instant Messaging
+||t.me
+||telegram.org
+EOF
+
+    # 2. 从 blackmatrix7 动态提取额外域名并追加进用户规则
+    # 注意：使用 || true 防止因网络问题导致 set -e 退出脚本
+    for url in \
+      "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/OpenAI/OpenAI.list" \
+      "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Claude/Claude.list" \
+      "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Telegram/Telegram.list"; do
+      curl -sSL "$url" | grep -E '^(DOMAIN|DOMAIN-SUFFIX),' | awk -F',' '{print "||" $2}' >> "$USER_RULE_FILE" || true
+    done
+
+    # 3. 从 Loyalsoldier 提取代理列表
+    curl -sSL "https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/release/proxy-list.txt" | grep -v '^#' | grep -v '^regexp:' | awk '{
+        if ($0 ~ /^full:/) {
+            sub(/^full:/, "");
+            print "|http://" $0;
+        } else if ($0 ~ /^domain:/) {
+            sub(/^domain:/, "");
+            print "||" $0;
+        } else {
+            print "||" $0;
+        }
+    }' >> "$USER_RULE_FILE" || true
+    
+    echo "Info: 规则合并完成，临时文件: $USER_RULE_FILE"
+}
+
+generate_pac() {
+    check_local_port
+    echo "Info: generating $WPAD with --pac-proxy=\"$PAC\" ..."
+
+    # 备份现有的 wpad.dat
+    if [ -f "$WPAD" ]; then
+        cp "$WPAD" "$WPAD.bak"
+    fi
+
+    fetch_rules
+
+    # 执行 genpac 编译成最终的 PAC 文件
+    # 使用 jsdelivr 镜像源，因为 raw.githubusercontent.com 经常被墙返回 HTML 页面
+    genpac \
+      --format=pac \
+      --pac-proxy="$PAC" \
+      --gfwlist-url="$GFWLIST_URL" \
+      --user-rule-from="$USER_RULE_FILE" \
+      -o "$WPAD"
+
+    # 清理临时规则文件
+    rm -f "$USER_RULE_FILE"
+
+    echo "Info: PAC 文件已更新至: $WPAD"
+}
+
 test_pac() {
     if [ ! -r "$WPAD" ]; then
         echo "Error: $WPAD 文件不存在或不可读，无法进行测试。"
@@ -88,93 +179,59 @@ test_pac() {
     return 0
 }
 
+# ##########################
 # Main Prog.
-# 支持 -t 参数仅执行测试
-if [ "${1:-}" == "-t" ]; then
-    echo "Info: 仅执行 PAC 文件测试模式 (-t)..."
-    chk_pkg
-    get_network_info
-    if test_pac; then
+# ##########################
+
+# 没有参数时显示帮助
+if [ $# -eq 0 ]; then
+    usage
+    exit 0
+fi
+
+case "$1" in
+    -t|--test)
+        echo "Info: 仅执行 PAC 文件测试模式..."
+        chk_pkg
+        get_network_info
+        if test_pac; then
+            exit 0
+        else
+            exit 7
+        fi
+        ;;
+    -g|--generate)
+        chk_pkg
+        get_network_info
+        
+        # 检查目标目录和文件权限
+        DIR=$(dirname "$WPAD")
+        if [ ! -d "$DIR" ]; then
+            mkdir -p "$DIR" || { echo "Error: Cannot create directory $DIR"; exit 2; }
+        elif [ ! -w "$DIR" ]; then
+            echo "Error: Directory $DIR is not writable!"
+            exit 2
+        fi
+        if [ -f "$WPAD" ] && [ ! -w "$WPAD" ]; then
+            echo "Error: $WPAD file not writable!"
+            exit 2
+        fi
+
+        generate_pac
+        if ! test_pac; then
+            echo "Info: 正在恢复备份文件 $WPAD.bak ..."
+            cp "$WPAD.bak" "$WPAD"
+            exit 7
+        fi
+        echo "Info: $WPAD 生成并验证成功。"
+        ;;
+    -h|--help)
+        usage
         exit 0
-    else
-        exit 7
-    fi
-fi
-
-chk_pkg
-get_network_info
-
-if [ ! -w "$WPAD" ]; then
-    echo "Error: $WPAD file not writable!"
-    exit 2
-fi
-
-check_local_port
-echo "Info: generating $WPAD with --pac-proxy=\"$PAC\" ..."
-
-# 备份现有的 wpad.dat
-cp "$WPAD" "$WPAD.bak" 2>/dev/null || true
-
-# 1. 动态生成/更新自定义规则文件 (提取 AI 与 Telegram 等追加规则)
-cat <<'EOF' > "$USER_RULE_FILE"
-! AI & LLM Services
-||chatgpt.com
-||openai.com
-||oaistatic.com
-||oaiusercontent.com
-||claude.ai
-||anthropic.com
-||aistudio.google.com
-||generativelanguage.googleapis.com
-
-! Developer & CDN
-||raw.githubusercontent.com
-||objects.githubusercontent.com
-||registry-1.docker.io
-||production.cloudflare.docker.com
-
-! Instant Messaging
-||t.me
-||telegram.org
-EOF
-
-# 2. 从 blackmatrix7 动态提取额外域名并追加进用户规则
-# 注意：使用 || true 防止因网络问题导致 set -e 退出脚本
-for url in \
-  "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/OpenAI/OpenAI.list" \
-  "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Claude/Claude.list" \
-  "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Telegram/Telegram.list"; do
-  curl -sSL "$url" | grep -E '^(DOMAIN|DOMAIN-SUFFIX),' | awk -F',' '{print "||" $2}' >> "$USER_RULE_FILE" || true
-done
-
-# 3. 从 Loyalsoldier 提取代理列表
-curl -sSL "https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/release/proxy-list.txt" | grep -v '^#' | grep -v '^regexp:' | awk '{
-    if ($0 ~ /^full:/) {
-        sub(/^full:/, "");
-        print "|http://" $0;
-    } else if ($0 ~ /^domain:/) {
-        sub(/^domain:/, "");
-        print "||" $0;
-    } else {
-        print "||" $0;
-    }
-}' >> "$USER_RULE_FILE" || true
-
-# 4. 执行 genpac 编译成最终的 PAC 文件
-# 使用 jsdelivr 镜像源，因为 raw.githubusercontent.com 经常被墙返回 HTML 页面
-genpac \
-  --format=pac \
-  --pac-proxy="$PAC" \
-  --gfwlist-url="$GFWLIST_URL" \
-  --user-rule-from="$USER_RULE_FILE" \
-  -o "$WPAD"
-
-echo "Info: PAC 文件已更新至: $WPAD"
-
-# 5. 验证 PAC 文件规则
-if ! test_pac; then
-    echo "Info: 正在恢复备份文件 $WPAD.bak ..."
-    cp "$WPAD.bak" "$WPAD"
-    exit 7
-fi
-echo "Info: $WPAD 生成并验证成功。"
+        ;;
+    *)
+        echo "Error: 未知参数 '$1'"
+        usage
+        exit 1
+        ;;
+esac
