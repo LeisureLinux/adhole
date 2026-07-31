@@ -37,34 +37,78 @@ check_local_port() {
     fi
 }
 
+get_network_info() {
+    # Host IP
+    HIP=$(hostname -I | awk '{print $1}')
+    if ! nc -zv localhost 53 >/dev/null 2>&1; then
+        echo "Error: local dns not up"
+        exit 2
+    fi
+    HNAME="wpad.lan"
+
+    IP=$(dig -4 +short "$HNAME" @localhost) || true
+    if [ -z "$IP" ]; then
+        echo "Error: $HNAME record was not setup correctly! "
+        echo "Run: \"unbound-control local_data $HNAME. A $HIP\" to add $HNAME record and re-run this script."
+        exit 1
+    fi
+    echo "$HNAME. was setup as $IP"
+
+    echo "Info: proxy port: $PRX_PORT"
+    PROXY="socks5 $IP:$PRX_PORT"
+    PAC="PROXY $IP:$HTTP_PORT; $PROXY"
+}
+
+test_pac() {
+    if [ ! -r "$WPAD" ]; then
+        echo "Error: $WPAD 文件不存在或不可读，无法进行测试。"
+        exit 1
+    fi
+
+    GOOGLE=$(pactester -p "$WPAD" -u https://www.google.com | tr -d '\r\n') || true
+    BAIDU=$(pactester -p "$WPAD" -u https://www.baidu.com | tr -d '\r\n') || true
+    OPENAI=$(pactester -p "$WPAD" -u https://chatgpt.com | tr -d '\r\n') || true
+
+    echo "Info: 验证 PAC 文件规则..."
+    echo "  Google (https://www.google.com) 返回: [$GOOGLE]"
+    echo "  Baidu  (https://www.baidu.com)  返回: [$BAIDU]"
+    echo "  OpenAI (https://chatgpt.com)    返回: [$OPENAI]"
+    echo "  期望 Google 返回: [$PAC]"
+    echo "  期望 Baidu  返回: [DIRECT]"
+    echo "  期望 OpenAI 返回: [$PAC]"
+
+    if [ "$GOOGLE" != "$PAC" ] || [ "$BAIDU" != "DIRECT" ] || [ "$OPENAI" != "$PAC" ]; then
+        echo "Error: $WPAD 文件规则验证失败！"
+        echo "  Google 实际返回: [$GOOGLE] (期望: [$PAC])"
+        echo "  Baidu 实际返回:  [$BAIDU] (期望: [DIRECT])"
+        echo "  OpenAI 实际返回: [$OPENAI] (期望: [$PAC])"
+        return 1
+    fi
+    echo "Info: $WPAD 验证成功。"
+    return 0
+}
+
 # Main Prog.
+# 支持 -t 参数仅执行测试
+if [ "${1:-}" == "-t" ]; then
+    echo "Info: 仅执行 PAC 文件测试模式 (-t)..."
+    chk_pkg
+    get_network_info
+    if test_pac; then
+        exit 0
+    else
+        exit 7
+    fi
+fi
+
 chk_pkg
-
-# Host IP
-HIP=$(hostname -I | awk '{print $1}')
-if ! nc -zv localhost 53 >/dev/null 2>&1; then
-    echo "Error: local dns not up"
-    exit 2
-fi
-HNAME="wpad.lan"
-
-IP=$(dig -4 +short "$HNAME" @localhost) || true
-if [ -z "$IP" ]; then
-	echo "Error: $HNAME record was not setup correctly! "
-	echo "Run: \"unbound-control local_data $HNAME. A $HIP\" to add $HNAME record and re-run this script."
-	exit 1
-fi
-echo "$HNAME. was setup as $IP"
-
-echo "Info: proxy port: $PRX_PORT"
-PROXY="socks5 $IP:$PRX_PORT"
+get_network_info
 
 if [ ! -w "$WPAD" ]; then
     echo "Error: $WPAD file not writable!"
     exit 2
 fi
 
-PAC="PROXY $IP:$HTTP_PORT; $PROXY"
 check_local_port
 echo "Info: generating $WPAD with --pac-proxy=\"$PAC\" ..."
 
@@ -128,23 +172,7 @@ genpac \
 echo "Info: PAC 文件已更新至: $WPAD"
 
 # 5. 验证 PAC 文件规则
-GOOGLE=$(pactester -p "$WPAD" -u https://www.google.com | tr -d '\r\n') || true
-BAIDU=$(pactester -p "$WPAD" -u https://www.baidu.com | tr -d '\r\n') || true
-OPENAI=$(pactester -p "$WPAD" -u https://chatgpt.com | tr -d '\r\n') || true
-
-echo "Info: 验证 PAC 文件规则..."
-echo "  Google (https://www.google.com) 返回: [$GOOGLE]"
-echo "  Baidu  (https://www.baidu.com)  返回: [$BAIDU]"
-echo "  OpenAI (https://chatgpt.com)    返回: [$OPENAI]"
-echo "  期望 Google 返回: [$PAC]"
-echo "  期望 Baidu  返回: [DIRECT]"
-echo "  期望 OpenAI 返回: [$PAC]"
-
-if [ "$GOOGLE" != "$PAC" ] || [ "$BAIDU" != "DIRECT" ] || [ "$OPENAI" != "$PAC" ]; then
-    echo "Error: $WPAD 文件规则验证失败！"
-    echo "  Google 实际返回: [$GOOGLE] (期望: [$PAC])"
-    echo "  Baidu 实际返回:  [$BAIDU] (期望: [DIRECT])"
-    echo "  OpenAI 实际返回: [$OPENAI] (期望: [$PAC])"
+if ! test_pac; then
     echo "Info: 正在恢复备份文件 $WPAD.bak ..."
     cp "$WPAD.bak" "$WPAD"
     exit 7
