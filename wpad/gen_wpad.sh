@@ -121,7 +121,13 @@ EOF
         }
     }' >> "$USER_RULE_FILE" || true
     
-    echo "Info: 规则合并完成，临时文件: $USER_RULE_FILE"
+    # 4. 规则去重与清理
+    echo "Info: 正在清理注释、空行并对规则进行去重..."
+    # 过滤掉 AdBlock Plus 格式的注释(!)和空白行，然后排序去重，以减小 PAC 文件体积并提升生成速度
+    grep -v '^!' "$USER_RULE_FILE" | grep -v '^[[:space:]]*$' | sort -u > "${USER_RULE_FILE}.tmp"
+    mv "${USER_RULE_FILE}.tmp" "$USER_RULE_FILE"
+
+    echo "Info: 规则合并并去重完成，临时文件: $USER_RULE_FILE"
 }
 
 generate_pac() {
