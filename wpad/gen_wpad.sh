@@ -7,13 +7,18 @@
 HTTP_PORT=8888
 # The SS_CFG file should be chmod 640, root:axu
 SS_CFG="/etc/shadowsocks-libev/my_ss.json"
+
+# 使用更可靠的 GFWList 镜像源 (jsdelivr CDN 或 GitLab)
+GFWLIST_URL="https://cdn.jsdelivr.net/gh/gfwlist/gfwlist/gfwlist.txt"
+# 自定义用户规则文件 (如果存在则加载，用于添加特定的 PAC 规则)
+USER_RULE_FILE="/etc/genpac/user-rules.txt"
 #
 # ##########################
 chk_pkg() {
 	# 检查必备的软件包
 	# Check to install required packages
 	PROG="shadowsocks-libev kcptun libpacparser1 haveged" # simple-obfs
-	! echo $PROGS|xargs dpkg-query -W >/dev/null && echo "Error: install $PROG first!" && exit 1
+	! echo $PROG | xargs dpkg-query -W >/dev/null && echo "Error: install $PROG first!" && exit 1
 	# [ $? != 0 ] && sudo apt -y install $PROG
 	! command -v genpac >/dev/null && echo "Error: install genpac by run # pip3 install genpac" && exit 1
 	! command -v pactester >/dev/null && echo "Error: install libpacparser1 first." && exit 1
@@ -49,7 +54,7 @@ IFS=
 # Host IP
 chk_pkg
 HIP=$(hostname -I | awk '{print $1}')
-! nc -zvu localhost 53  && echo "Error: local dns not up" && exit 2
+! nc -zv localhost 53  && echo "Error: local dns not up" && exit 2
 HNAME="wpad.lan"
 #
 IP=$(dig -4 +short $HNAME @localhost)
@@ -76,7 +81,19 @@ PAC="PROXY $IP:$HTTP_PORT; $PROXY"
 check_local_port
 echo "Info: generating $WPAD with --pac-proxy=\"$PAC\" ..."
 cp $WPAD $WPAD.bak
-/usr/local/bin/genpac --format=pac --pac-proxy="$PAC" --proxy "socks5://127.0.0.1:$PRX_PORT" | tee $WPAD >/dev/null
+
+# 构建 genpac 命令参数
+GENPAC_CMD="/usr/local/bin/genpac --format=pac --pac-proxy=\"$PAC\" --proxy \"socks5://127.0.0.1:$PRX_PORT\""
+# 使用可靠的 GFWList 源
+GENPAC_CMD="$GENPAC_CMD --gfwlist-url=\"$GFWLIST_URL\""
+# 如果存在自定义规则文件，则添加
+if [ -r "$USER_RULE_FILE" ]; then
+    GENPAC_CMD="$GENPAC_CMD --user-rule-from=\"$USER_RULE_FILE\""
+fi
+
+# 执行生成命令
+eval $GENPAC_CMD | tee $WPAD >/dev/null
+
 GOOGLE=$(pactester -p $WPAD -u https://www.google.com)
 BAIDU=$(pactester -p $WPAD -u https://www.baidu.com)
 [ "$GOOGLE" != "$PAC" -o "$BAIDU" != "DIRECT" ] && echo "Error: Looked like $WPAD file not working correctly \
