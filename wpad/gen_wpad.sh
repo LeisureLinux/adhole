@@ -15,7 +15,7 @@ GFWLIST_URL="https://cdn.jsdelivr.net/gh/gfwlist/gfwlist/gfwlist.txt"
 # ##########################
 chk_pkg() {
 	# 检查必备的软件包
-	PROG="shadowsocks-libev kcptun libpacparser1 haveged"
+	PROG="libpacparser1 haveged"
 	if ! echo "$PROG" | xargs dpkg-query -W >/dev/null 2>&1; then
         echo "Error: install $PROG first!"
         exit 1
