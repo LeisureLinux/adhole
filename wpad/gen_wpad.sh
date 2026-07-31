@@ -121,10 +121,19 @@ EOF
         }
     }' >> "$USER_RULE_FILE" || true
     
-    # 4. 规则去重与清理
-    echo "Info: 正在清理注释、空行并对规则进行去重..."
-    # 过滤掉 AdBlock Plus 格式的注释(!)和空白行，然后排序去重，以减小 PAC 文件体积并提升生成速度
-    grep -v '^!' "$USER_RULE_FILE" | grep -v '^[[:space:]]*$' | sort -u > "${USER_RULE_FILE}.tmp"
+    # 4. 下载 GFWList 并解码，与用户规则合并以实现全局去重
+    echo "Info: 正在下载并解码 GFWList..."
+    GFWLIST_LOCAL="/tmp/gfwlist_decoded.txt"
+    curl -sSL "$GFWLIST_URL" | base64 -d > "$GFWLIST_LOCAL" || true
+    
+    # 将 GFWList 追加到用户规则文件中
+    cat "$GFWLIST_LOCAL" >> "$USER_RULE_FILE"
+    rm -f "$GFWLIST_LOCAL"
+
+    # 5. 规则全局去重与清理
+    echo "Info: 正在清理注释、空行并对所有规则进行全局去重..."
+    # 过滤掉 AdBlock Plus 格式的注释(!)、空白行、以及 GFWList 的头([AutoProxy...)
+    grep -v '^!' "$USER_RULE_FILE" | grep -v '^[[:space:]]*$' | grep -v '^\[' | sort -u > "${USER_RULE_FILE}.tmp"
     mv "${USER_RULE_FILE}.tmp" "$USER_RULE_FILE"
 
     echo "Info: 规则合并并去重完成，临时文件: $USER_RULE_FILE"
@@ -142,12 +151,11 @@ generate_pac() {
     fetch_rules
 
     # 执行 genpac 编译成最终的 PAC 文件
-    # 使用 jsdelivr 镜像源，因为 raw.githubusercontent.com 经常被墙返回 HTML 页面
+    # 使用本地合并并去重后的规则文件，避免 genpac 内部合并多源规则时产生重复
     genpac \
       --format=pac \
       --pac-proxy="$PAC" \
-      --gfwlist-url="$GFWLIST_URL" \
-      --user-rule-from="$USER_RULE_FILE" \
+      --gfwlist-local="$USER_RULE_FILE" \
       -o "$WPAD"
 
     # 清理临时规则文件
