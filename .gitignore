@@ -8,3 +8,4 @@ data/result
 .aider*
 
 utils/unbound-dashboard/bins/
+.codexignore
