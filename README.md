@@ -168,6 +168,7 @@ adhole/
 │   ├── block_urls.txt        # HOSTS 格式黑名单源 URL
 │   ├── threat_urls.txt       # 威胁情报源 URL（木马/钓鱼/间谍软件）
 │   ├── text_urls.txt         # 文本格式黑名单源 URL
+│   ├── adblock_urls.txt      # Adblock/uBlock 过滤列表源 URL（Brave）
 │   ├── block_domains.txt     # 自定义封锁域名（每行一个）
 │   ├── unblock_domains.txt   # 白名单排除项
 │   └── result/               # 产出目录
@@ -204,6 +205,11 @@ adhole/
 ```txt
 https://raw.githubusercontent.com/example/custom-list/master/hosts
 ```
+
+> 💡 **Adblock / uBlock 过滤列表**：`data/adblock_urls.txt` 支持 Adblock Plus /
+> uBlock 过滤列表（例如 Brave 的 `brave-lists`）。脚本只提取其中的整域名规则
+> `||domain.tld^` 并转换为 Unbound `local-zone always_null`；URL 路径、`$domain=`、
+> 元素隐藏 `##`、脚本 `##+js` 与白名单 `@@` 规则无法在 DNS 层表达，会被跳过。
 
 ### 添加本地封锁域名
 

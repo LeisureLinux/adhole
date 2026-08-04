@@ -1,0 +1,7 @@
+# Brave adblock lists (Adblock Plus / uBlock filter format, processed by grab_adblock())
+# Only whole-domain rules (||domain.tld^) are extracted into unbound always_null;
+# cosmetic, path, $domain=, scriptlet and @@ exception rules are skipped.
+https://raw.githubusercontent.com/brave/adblock-lists/master/brave-lists/brave-firstparty-cname.txt
+https://raw.githubusercontent.com/brave/adblock-lists/master/brave-lists/brave-ios-specific.txt
+https://raw.githubusercontent.com/brave/adblock-lists/master/brave-lists/filters-mirror.txt
+https://raw.githubusercontent.com/brave/adblock-lists/master/brave-lists/brave-firstparty.txt

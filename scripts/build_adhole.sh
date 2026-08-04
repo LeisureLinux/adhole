@@ -32,6 +32,8 @@ GRAB_LOG="$WORK_DIR/result/grab_$(date +%Y%m%d_%H%M%S).log"
 #
 BLOCK_URL=$WORK_DIR/block_urls.txt
 THREAT_URL=$WORK_DIR/threat_urls.txt
+# Adblock Plus / uBlock filter lists (e.g. Brave), processed by grab_adblock()
+ADBLOCK_URL=$WORK_DIR/adblock_urls.txt
 # the contents of the URL in the list are only domain names plaintext
 TEXT_URL=$WORK_DIR/text_urls.txt
 # Self-defined block and unblock domains
@@ -83,7 +85,7 @@ for arg in "$@"; do
 done
 
 cat /dev/null >"$ZONE_TMP_FILE"
-touch "$ZONE_FILE".zst "$BLOCK_URL" "$BLOCK_DOM" "$UNBLOCK_DOM" "$TEXT_URL"
+touch "$ZONE_FILE".zst "$BLOCK_URL" "$BLOCK_DOM" "$UNBLOCK_DOM" "$TEXT_URL" "$ADBLOCK_URL"
 
 # log(): print a message to both stdout and the grab log
 log() {
@@ -173,6 +175,49 @@ block_text() {
 
 	counts "$TMP_FILE" | tee -a "$TMP_FILE.status"
 	rm "$TMP_FILE.curl"
+	cat "$TMP_FILE" >>"$ZONE_TMP_FILE"
+}
+
+
+# grab_adblock(): fetch an Adblock Plus / uBlock filter list (e.g. Brave) and convert
+# only whole-domain block rules (||domain.tld^) into unbound always_null format.
+# Rules with URL paths, $domain= scoping, cosmetic (##), scriptlet (#@#/##+js),
+# and exception (@@) entries cannot be expressed at DNS level and are skipped.
+grab_adblock() {
+	AD_URL=$1
+	local fname
+	fname=$(basename "$AD_URL")
+	fname=$(echo "$fname" | awk -F'?' '{print $1}')
+	TMP_FILE=$CACHE_DIR/$fname
+	if file_age "$TMP_FILE".status; then
+		log "Info: no need to grab $AD_URL"
+		[ -r "$TMP_FILE" ] && cat "$TMP_FILE" >>"$ZONE_TMP_FILE"
+		return
+	fi
+	log "Info: Grabbing $AD_URL to $TMP_FILE ..."
+	if ! $CURL "$AD_URL" >"$TMP_FILE".curl; then
+		log "Error: grab $AD_URL failed!" && exit 1
+	fi
+	echo "URL: $AD_URL" >"$TMP_FILE".status
+	head -30 "$TMP_FILE".curl | grep '^!' | grep . >"$TMP_FILE".head
+	[ -s "$TMP_FILE".head ] && cat "$TMP_FILE".head >>"$TMP_FILE".status || echo "# No head from source" >>"$TMP_FILE".status
+	rm -f "$TMP_FILE".head
+
+	# Keep only whole-domain block rules: ||domain.tld^[options], no path, no @@ exception
+	{
+		grep -E '^\|\|' "$TMP_FILE".curl \
+		| grep -v '^@@' \
+		| grep -v '/' \
+		| sed -n -E 's/^\|\|([a-zA-Z0-9_.-]+).*/\1/p' \
+		| grep -v 'domain=' \
+		| grep -E '^[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)*\.[a-zA-Z]{2,}$' \
+		| tr '[:upper:]' '[:lower:]' \
+		| awk '{print "local-zone: \"" $0 "\" always_null\n"}' \
+		| grep '"[^ ]*"'
+	} >"$TMP_FILE"
+
+	counts "$TMP_FILE" | tee -a "$TMP_FILE".status
+	rm -f "$TMP_FILE".curl
 	cat "$TMP_FILE" >>"$ZONE_TMP_FILE"
 }
 
@@ -300,6 +345,13 @@ done
 # Process threat intelligence sources (format auto-detection)
 for url in $(grep -v "^#" "$THREAT_URL" 2>/dev/null); do
 	block_text "$url"
+done
+
+
+# Process Brave / Adblock Plus (uBlock) whole-domain filter lists
+log "Info: Processing Adblock filter lists (Brave) ..."
+for url in $(grep -v "^#" "$ADBLOCK_URL" 2>/dev/null); do
+	grab_adblock "$url"
 done
 
 log "Info: Add local block domain list ..."

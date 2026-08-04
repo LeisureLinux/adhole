@@ -118,6 +118,7 @@ cd /path/to/adhole
 | `block()` | 重试 3 次（间隔 5 秒），全部失败则退出 |
 | `block_text()` | 不重试，失败即退出 |
 | `grab_oisd()` | 不重试，失败即退出 |
+| `grab_adblock()` | 不重试，失败即退出（Adblock/uBlock 列表） |
 | 代理检查 | Google 不可达则退出 |
 
 ---
@@ -133,6 +134,11 @@ cd /path/to/adhole
 ```txt
 https://example.com/blocklist.txt
 ```
+
+> 💡 **Adblock / uBlock 过滤列表**：`data/adblock_urls.txt` 支持 Adblock Plus /
+> uBlock 格式（例如 Brave `adblock-lists` 的 `brave-lists`）。脚本仅提取整域名规则
+> `||domain.tld^` 转成 Unbound `local-zone always_null`；URL 路径、`$domain=`、
+> 元素隐藏 `##`、脚本 `##+js` 及白名单 `@@` 规则无法在 DNS 层表达，自动跳过。
 
 ### 添加本地封锁域名
 
