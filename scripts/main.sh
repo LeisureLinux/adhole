@@ -97,7 +97,7 @@ do_pull() {
 			$CURL "$STATUS_URL" -o "/tmp/adhole_status.txt"
 			grep -v '^#' /tmp/adhole_status.txt | grep . || true
 			echo "Info: Decompressing..."
-			if zstd -d -f --output-dir-flat "$CONF_DIR" /tmp/adhole.conf.zst; then
+			if sudo zstd -d -f --output-dir-flat "$CONF_DIR" /tmp/adhole.conf.zst; then
 				RELOAD=1
 			else
 				echo "Error: Decompression failed!"
