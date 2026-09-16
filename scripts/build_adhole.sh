@@ -118,6 +118,45 @@ file_age() {
 	[ $(($now - $file_age)) -gt 86400 ] && return 1 || return 0
 }
 
+# payload_complete(): the last non-empty line of a payload must be a complete
+# "local-zone: ..." entry. A run killed mid-write can leave a payload truncated
+# mid-line (e.g. ending in 'local-zon'), which would otherwise fuse with the
+# first line of the next source and produce a corrupt zone file.
+payload_complete() {
+	awk 'NF{last=$0} END{exit !(last ~ /^local-zone: ".+" always_null$/)}' "$1"
+}
+
+# valid_payload(): payload is reusable from cache only if it is non-empty AND
+# complete. Empty means the source yielded nothing (or died before writing a
+# single entry), so we refetch rather than trust it.
+valid_payload() {
+	[ -s "$1" ] || return 1
+	payload_complete "$1"
+}
+
+# cache_usable(): cache is reusable only when the .status marker is fresh AND
+# the payload itself is complete. Never trust .status alone.
+cache_usable() {
+	file_age "$1".status && valid_payload "$1"
+}
+
+# append_zone(): append a source payload to the running zone file, always
+# terminating the appended block with a newline so a payload whose last line
+# lacks one cannot fuse with the first line of the next source. An empty
+# payload is a no-op; a truncated one is refused rather than silently corrupting
+# the zone file.
+append_zone() {
+	[ -r "$1" ] || return 0
+	[ -s "$1" ] || return 0
+	if ! payload_complete "$1"; then
+		log "Error: refusing to append truncated payload: $1"
+		return 1
+	fi
+	cat "$1" >>"$ZONE_TMP_FILE"
+	[ -n "$(tail -c1 "$1")" ] && echo >>"$ZONE_TMP_FILE"
+	return 0
+}
+
 grab_0000_head() {
 	[ ! -r "$1" ] && return
 	[ "$(grep -v '^#' "$1" | grep . | tail -1 | awk '{print $1}')" = "0.0.0.0" ] && sed -n '1,/^0.0.0.0/p' "$1" | grep -v "^0.0.0.0"
@@ -131,9 +170,9 @@ block_text() {
 	fname=$(echo "$fname" | awk -F'?' '{print $1}')
 	[ "$fname" = "hosts" ] && fname=$(echo "$AD_URL" | awk -F/ '{print $(NF - 1)}' | awk -F'?' '{print $1}')".hosts.txt"
 	TMP_FILE=$CACHE_DIR/$fname
-	if file_age "$TMP_FILE".status; then
+	if cache_usable "$TMP_FILE"; then
 		log "Info: no need to grab $AD_URL"
-		[ -r "$TMP_FILE" ] && cat "$TMP_FILE" >>"$ZONE_TMP_FILE"
+		append_zone "$TMP_FILE" || exit 1
 		return
 	fi
 	log "Info: Grabbing $AD_URL to $TMP_FILE ..."
@@ -141,10 +180,11 @@ block_text() {
 		log "Error: grab $AD_URL failed!" && exit 1
 		return
 	fi
-	echo "URL: $AD_URL" >"$TMP_FILE".status
+	STATUS_TMP="$TMP_FILE".status.new
+	echo "URL: $AD_URL" >"$STATUS_TMP"
 	head -30 "$TMP_FILE".curl | grep '^#' | grep -v "#$" | grep . >"$TMP_FILE".head
-	[ -s "$TMP_FILE".head ] && cat "$TMP_FILE".head >>"$TMP_FILE".status || echo "# No head from source" >>"$TMP_FILE".status
-	rm "$TMP_FILE".head
+	[ -s "$TMP_FILE".head ] && cat "$TMP_FILE".head >>"$STATUS_TMP" || echo "# No head from source" >>"$STATUS_TMP"
+	rm -f "$TMP_FILE".head
 
 
 	# Enhanced block_text: universal format cleaner for any blacklist source
@@ -173,9 +213,10 @@ block_text() {
 		fi
 	} >"$TMP_FILE"
 
-	counts "$TMP_FILE" | tee -a "$TMP_FILE.status"
-	rm "$TMP_FILE.curl"
-	cat "$TMP_FILE" >>"$ZONE_TMP_FILE"
+	counts "$TMP_FILE" | tee -a "$STATUS_TMP"
+	rm -f "$TMP_FILE.curl"
+	mv "$STATUS_TMP" "$TMP_FILE".status
+	append_zone "$TMP_FILE" || exit 1
 }
 
 
@@ -189,18 +230,19 @@ grab_adblock() {
 	fname=$(basename "$AD_URL")
 	fname=$(echo "$fname" | awk -F'?' '{print $1}')
 	TMP_FILE=$CACHE_DIR/$fname
-	if file_age "$TMP_FILE".status; then
+	if cache_usable "$TMP_FILE"; then
 		log "Info: no need to grab $AD_URL"
-		[ -r "$TMP_FILE" ] && cat "$TMP_FILE" >>"$ZONE_TMP_FILE"
+		append_zone "$TMP_FILE" || exit 1
 		return
 	fi
 	log "Info: Grabbing $AD_URL to $TMP_FILE ..."
 	if ! $CURL "$AD_URL" >"$TMP_FILE".curl; then
 		log "Error: grab $AD_URL failed!" && exit 1
 	fi
-	echo "URL: $AD_URL" >"$TMP_FILE".status
+	STATUS_TMP="$TMP_FILE".status.new
+	echo "URL: $AD_URL" >"$STATUS_TMP"
 	head -30 "$TMP_FILE".curl | grep '^!' | grep . >"$TMP_FILE".head
-	[ -s "$TMP_FILE".head ] && cat "$TMP_FILE".head >>"$TMP_FILE".status || echo "# No head from source" >>"$TMP_FILE".status
+	[ -s "$TMP_FILE".head ] && cat "$TMP_FILE".head >>"$STATUS_TMP" || echo "# No head from source" >>"$STATUS_TMP"
 	rm -f "$TMP_FILE".head
 
 	# Keep only whole-domain block rules: ||domain.tld^[options], no path, no @@ exception
@@ -216,9 +258,10 @@ grab_adblock() {
 		| grep '"[^ ]*"'
 	} >"$TMP_FILE"
 
-	counts "$TMP_FILE" | tee -a "$TMP_FILE".status
+	counts "$TMP_FILE" | tee -a "$STATUS_TMP"
 	rm -f "$TMP_FILE".curl
-	cat "$TMP_FILE" >>"$ZONE_TMP_FILE"
+	mv "$STATUS_TMP" "$TMP_FILE".status
+	append_zone "$TMP_FILE" || exit 1
 }
 
 block() {
@@ -228,9 +271,9 @@ block() {
 	fname=$(basename "$AD_URL")
 	[ "$fname" = "hosts" ] && fname=$(echo "$AD_URL" | awk -F/ '{print $(NF - 1)}')".hosts"
 	TMP_FILE=$CACHE_DIR/$fname
-	if file_age "$TMP_FILE".status; then
+	if cache_usable "$TMP_FILE"; then
 		log "Info: no need to grab $AD_URL"
-		[ -r "$TMP_FILE" ] && cat "$TMP_FILE" >>"$ZONE_TMP_FILE"
+		append_zone "$TMP_FILE" || exit 1
 		return
 	fi
 	log "Info: Grabbing $AD_URL to $TMP_FILE ..."
@@ -258,12 +301,14 @@ block() {
 	fi
 	# Pre-process, remove some IP address
 	grep -E -v '127.0.0.1|255.255.255|::' "$TMP_FILE" >"$TMP_FILE".curl
-	echo "URL: $AD_URL" >"$TMP_FILE".status
-	grab_0000_head "$TMP_FILE".curl >>"$TMP_FILE".status
+	STATUS_TMP="$TMP_FILE".status.new
+	echo "URL: $AD_URL" >"$STATUS_TMP"
+	grab_0000_head "$TMP_FILE".curl >>"$STATUS_TMP"
 	grep '^0\.0\.0\.0' "$TMP_FILE".curl | awk '{print "local-zone: \""$2"\" always_null\n"}' | grep -v "0.0.0.0" >"$TMP_FILE"
-	counts "$TMP_FILE" | tee -a "$TMP_FILE".status
-	rm "$TMP_FILE".curl
-	cat "$TMP_FILE" >>"$ZONE_TMP_FILE"
+	counts "$TMP_FILE" | tee -a "$STATUS_TMP"
+	rm -f "$TMP_FILE".curl
+	mv "$STATUS_TMP" "$TMP_FILE".status
+	append_zone "$TMP_FILE" || exit 1
 	echo >>"$ZONE_TMP_FILE"
 }
 
@@ -273,19 +318,21 @@ grab_oisd() {
 	fname=$(basename "$AD_URL")
 	[ "$fname" = "hosts" ] && fname=$(echo "$AD_URL" | awk -F/ '{print $(NF - 1)}')".hosts"
 	TMP_FILE=$CACHE_DIR/$(basename $AD_URL)
-	if file_age "$TMP_FILE".status; then
+	if cache_usable "$TMP_FILE"; then
 		log "Info: no need to grab $AD_URL"
-		[ -r "$TMP_FILE" ] && cat "$TMP_FILE" >>"$ZONE_TMP_FILE"
+		append_zone "$TMP_FILE" || exit 1
 		return
 	fi
 	log "Info: Grabbing $AD_URL to $TMP_FILE ..."
 	if ! $CURL $AD_URL -o "$TMP_FILE"; then
 		log "Error: grab $AD_URL failed!" && exit 1
 	fi
-	echo "URL: $AD_URL" >"$TMP_FILE".status
-	grep "^#" "$TMP_FILE" | grep . >>"$TMP_FILE".status
-	counts "$TMP_FILE" | tee -a "$TMP_FILE".status
-	cat "$TMP_FILE" >>"$ZONE_TMP_FILE"
+	STATUS_TMP="$TMP_FILE".status.new
+	echo "URL: $AD_URL" >"$STATUS_TMP"
+	grep "^#" "$TMP_FILE" | grep . >>"$STATUS_TMP"
+	counts "$TMP_FILE" | tee -a "$STATUS_TMP"
+	mv "$STATUS_TMP" "$TMP_FILE".status
+	append_zone "$TMP_FILE" || exit 1
 }
 
 gen_status() {
@@ -374,16 +421,20 @@ time grep -v "0.0.0.0" "$ZONE_TMP_FILE" | sed -e 's/\."/"/g' | grep -E -v "$excl
 rm "$ZONE_TMP_FILE"
 log "Info: results after deduplication:"
 counts "$ZONE_FILE"
-cat >/tmp/check.conf <<EOF
+cat >"$ZONE_TMP_FILE".check <<EOF
 server:
 include: "$ZONE_FILE"
 EOF
-if ! /usr/sbin/unbound-checkconf /tmp/check.conf 2>/dev/null; then
+# Show unbound-checkconf's diagnostics instead of discarding them: the previous
+# 2>/dev/null hid the offending line number, which is the whole point of the check.
+if ! CHECK_OUT=$(/usr/sbin/unbound-checkconf "$ZONE_TMP_FILE".check 2>&1); then
 	log "Error: Found error in $ZONE_FILE"
+	log "$CHECK_OUT"
+	exit 1
 else
 	FINAL_COUNT=$(grep -c "^local-zone" "$ZONE_FILE")
 	log "Info: compressing $ZONE_FILE ..."
 	zst "$ZONE_FILE"
 	gen_status "$FINAL_COUNT"
 fi
-rm /tmp/check.conf
+rm -f "$ZONE_TMP_FILE".check
