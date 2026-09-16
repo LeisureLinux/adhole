@@ -245,13 +245,17 @@ grab_adblock() {
 	[ -s "$TMP_FILE".head ] && cat "$TMP_FILE".head >>"$STATUS_TMP" || echo "# No head from source" >>"$STATUS_TMP"
 	rm -f "$TMP_FILE".head
 
-	# Keep only whole-domain block rules: ||domain.tld^[options], no path, no @@ exception
+	# Keep only whole-domain block rules: ||domain.tld^, no path, no @@ exception,
+	# no $option scoping. Order matters: the raw rule must be tested for 'domain='
+	# BEFORE the domain is extracted, otherwise the option text is discarded and
+	# the rule degenerates into a global block of a shared host
+	# (e.g. ||fastly.net^$...,domain=cbs.com would block all of fastly.net).
 	{
 		grep -E '^\|\|' "$TMP_FILE".curl \
 		| grep -v '^@@' \
 		| grep -v '/' \
-		| sed -n -E 's/^\|\|([a-zA-Z0-9_.-]+).*/\1/p' \
 		| grep -v 'domain=' \
+		| sed -n -E 's/^\|\|([a-zA-Z0-9_.-]+).*/\1/p' \
 		| grep -E '^[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)*\.[a-zA-Z]{2,}$' \
 		| tr '[:upper:]' '[:lower:]' \
 		| awk '{print "local-zone: \"" $0 "\" always_null\n"}' \
