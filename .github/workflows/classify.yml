@@ -35,6 +35,8 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq dnsutils zstd dos2unix unbound parallel
+          # build_adhole.sh 硬编码检查 /usr/bin/zst（旧名），Ubuntu 只有 zstd
+          sudo ln -sf /usr/bin/zstd /usr/bin/zst
       - name: Build adhole source list
         run: bash scripts/build_adhole.sh
       - name: Upload source
