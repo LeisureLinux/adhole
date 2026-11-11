@@ -29,7 +29,7 @@ if [ -n "$LM" ]; then
   fi
 fi
 
-for f in adhole-cn.conf adhole-noncn.conf adhole-full.conf; do
+for f in adhole-cn.conf adhole-noncn.conf adhole-full.conf domestic-domains.txt geo-domestic.srs; do
   if cmp -s "$f" "$DEST/$f"; then echo "  $f 无变化"; else
     install -m 644 "$f" "$DEST/$f"; echo "  $f 已更新"
   fi

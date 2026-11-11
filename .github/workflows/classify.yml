@@ -100,7 +100,16 @@ jobs:
           name: adhole-source
           path: data/result
       - name: Install deps
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq unbound
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq unbound jq
+          # sing-box 用于 rule-set compile（生成 geo-domestic.srs）
+          SB_VER=$(curl -fsSL https://api.github.com/repos/SagerNet/sing-box/releases/latest | jq -r .tag_name)
+          SB_VER=${SB_VER#v}
+          curl -fsSL -o /tmp/sing-box.tar.gz \
+            "https://github.com/SagerNet/sing-box/releases/download/v${SB_VER}/sing-box-${SB_VER}-linux-amd64.tar.gz"
+          sudo tar xzf /tmp/sing-box.tar.gz -C /usr/local/bin --strip-components=1 \
+            "sing-box-${SB_VER}-linux-amd64/sing-box"
+          sing-box version | head -1
       - name: Merge shards
         run: |
           python3 scripts/merge_shards.py \
@@ -110,12 +119,22 @@ jobs:
             printf 'server:\ninclude: "%s"\n' "$PWD/$f" > /tmp/ubcheck.conf
             unbound-checkconf /tmp/ubcheck.conf
           done
+      - name: Generate domestic-domains + geo-domestic.srs
+        run: |
+          GEOSITE=data/state/geosite-cn.json bash scripts/gen-domestic-domains.sh
+          python3 scripts/compile-geo-domestic.py \
+            data/state/domestic-domains.txt /tmp/geo-domestic.json
+          sing-box rule-set compile --output data/state/geo-domestic.srs /tmp/geo-domestic.json
+          ls -lh data/state/domestic-domains.txt data/state/geo-domestic.srs
       - name: Pack
         run: |
           cd data/state
-          tar czf ../../adhole-state.tar.gz adhole-cn.conf adhole-noncn.conf adhole-full.conf
+          tar czf ../../adhole-state.tar.gz \
+            adhole-cn.conf adhole-noncn.conf adhole-full.conf \
+            domestic-domains.txt geo-domestic.srs
           # 生成「当前目录」的校验和，使 fetch 脚本解压后能直接 sha256sum -c
-          sha256sum adhole-cn.conf adhole-noncn.conf adhole-full.conf > ../../adhole-state.sha256
+          sha256sum adhole-cn.conf adhole-noncn.conf adhole-full.conf \
+            domestic-domains.txt geo-domestic.srs > ../../adhole-state.sha256
       - name: Publish assets (fixed tag `adhole`, same as scripts/main.sh)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -131,5 +150,7 @@ jobs:
             data/state/adhole-cn.conf \
             data/state/adhole-noncn.conf \
             data/state/adhole-full.conf \
+            data/state/domestic-domains.txt \
+            data/state/geo-domestic.srs \
             adhole-state.tar.gz \
             adhole-state.sha256
