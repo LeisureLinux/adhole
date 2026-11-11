@@ -10,3 +10,7 @@ cm.bilibili.com
 data.bilibili.com
 miniapp.bilibili.com
 
+
+# Future plc（Tom's Hardware / TechRadar / PC Gamer）反广告检测的脚本域
+# 拦了会被站点判定为 adblock → 跳 report.error-report.com 的「请允许广告」墙
+html-load.com
