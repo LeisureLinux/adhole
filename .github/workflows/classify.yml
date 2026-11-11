@@ -119,13 +119,26 @@ jobs:
             printf 'server:\ninclude: "%s"\n' "$PWD/$f" > /tmp/ubcheck.conf
             unbound-checkconf /tmp/ubcheck.conf
           done
+      - name: Refresh geosite-cn from upstream (sing-box decompile)
+        run: |
+          # 官方 rule-set 分支；每周拉一次，保证 domestic-domains 跟着上游更新
+          curl -fsSL --retry 3 \
+            https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-cn.srs \
+            -o /tmp/geosite-cn.srs
+          sing-box rule-set decompile -o /tmp/geosite-cn.json /tmp/geosite-cn.srs
+          python3 -c "import json;d=json.load(open('/tmp/geosite-cn.json'));\
+            n=sum(len(r.get('domain_suffix',[])) for r in d.get('rules',[]));\
+            print(f'  geosite-cn: {n} domain_suffix');\
+            assert n > 5000, 'upstream geosite-cn 异常偏小'"
       - name: Generate domestic-domains + geo-domestic.srs
         run: |
-          GEOSITE=data/state/geosite-cn.json bash scripts/gen-domestic-domains.sh
+          GEOSITE=/tmp/geosite-cn.json bash scripts/gen-domestic-domains.sh
           python3 scripts/compile-geo-domestic.py \
             data/state/domestic-domains.txt /tmp/geo-domestic.json
           sing-box rule-set compile --output data/state/geo-domestic.srs /tmp/geo-domestic.json
           ls -lh data/state/domestic-domains.txt data/state/geo-domestic.srs
+          # 把上游 json 也作为 asset 发布，便于审计/复现
+          cp /tmp/geosite-cn.json data/state/geosite-cn.json
       - name: Pack
         run: |
           cd data/state
@@ -152,5 +165,6 @@ jobs:
             data/state/adhole-full.conf \
             data/state/domestic-domains.txt \
             data/state/geo-domestic.srs \
+            data/state/geosite-cn.json \
             adhole-state.tar.gz \
             adhole-state.sha256
