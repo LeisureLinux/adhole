@@ -9,3 +9,8 @@ data/result
 
 utils/unbound-dashboard/bins/
 .codexignore
+.secrets/
+
+# Python 缓存
+__pycache__/
+*.pyc
