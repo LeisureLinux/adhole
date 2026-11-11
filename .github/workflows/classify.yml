@@ -101,10 +101,10 @@ jobs:
           path: data/result
       - name: Install deps
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq unbound jq
+          sudo apt-get update -qq && sudo apt-get install -y -qq unbound
           # sing-box 用于 rule-set compile（生成 geo-domestic.srs）
-          SB_VER=$(curl -fsSL https://api.github.com/repos/SagerNet/sing-box/releases/latest | jq -r .tag_name)
-          SB_VER=${SB_VER#v}
+          # 固定版本，与 wpad-02 运行中的 sing-box 一致；避免上游 release 命名变化弄挂 CI
+          SB_VER=1.14.4
           curl -fsSL -o /tmp/sing-box.tar.gz \
             "https://github.com/SagerNet/sing-box/releases/download/v${SB_VER}/sing-box-${SB_VER}-linux-amd64.tar.gz"
           sudo tar xzf /tmp/sing-box.tar.gz -C /usr/local/bin --strip-components=1 \
