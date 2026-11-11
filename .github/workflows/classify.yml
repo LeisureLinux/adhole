@@ -1,0 +1,119 @@
+name: adhole full classify
+
+on:
+  schedule:
+    # 每周日 14:00 UTC = 周一 22:00 CST（避开国内白天；本机 06:xx 拉取当天产物）
+    - cron: '0 14 * * 0'
+  workflow_dispatch:
+    inputs:
+      qps:
+        description: '每片每秒 DNS 查询数'
+        default: '40'
+      workers:
+        description: '每片并发线程数'
+        default: '40'
+
+permissions:
+  contents: write          # 上传 GitHub Release
+
+concurrency:
+  group: adhole-full
+  cancel-in-progress: true
+
+env:
+  SHARDS: 5
+  PYTHON: python3
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+      - name: Install deps
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq dnsutils zstd dos2unix unbound parallel
+      - name: Build adhole source list
+        run: bash scripts/build_adhole.sh
+      - name: Upload source
+        uses: actions/upload-artifact@v4
+        with:
+          name: adhole-source
+          path: data/result/adhole.conf
+          retention-days: 3
+
+  classify:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 350          # < 360 上限；qps=40 时每片实测约 2.5h
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+      - uses: actions/download-artifact@v4
+        with:
+          name: adhole-source
+          path: data/result
+      - name: Install deps
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq dnsutils
+      - name: Classify shard ${{ matrix.shard }}/5
+        env:
+          QPS: ${{ github.event.inputs.qps || '40' }}
+          WORKERS: ${{ github.event.inputs.workers || '40' }}
+        run: |
+          mkdir -p out
+          python3 scripts/classify_shard.py \
+            --conf data/result/adhole.conf \
+            --shard ${{ matrix.shard }}/5 \
+            --qps "$QPS" --workers "$WORKERS" \
+            --geoip data/state/geoip-cn.json \
+            --out out/shard-${{ matrix.shard }}.tsv
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shard-${{ matrix.shard }}
+          path: out/shard-${{ matrix.shard }}.tsv
+          retention-days: 3
+
+  merge:
+    needs: classify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: shard-*
+          path: artifacts
+      - name: Install deps
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq unbound
+      - name: Merge shards
+        run: |
+          python3 scripts/merge_shards.py \
+            --shards 'artifacts/*/shard-*.tsv' \
+            --out data/state
+          for f in data/state/adhole-cn.conf data/state/adhole-noncn.conf; do
+            printf 'server:\ninclude: "%s"\n' "$PWD/$f" > /tmp/ubcheck.conf
+            unbound-checkconf /tmp/ubcheck.conf
+          done
+      - name: Pack
+        run: |
+          cd data/state
+          tar czf ../../adhole-state.tar.gz adhole-cn.conf adhole-noncn.conf adhole-full.conf
+          sha256sum adhole-*.conf > ../../adhole-state.sha256
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="state-$(date -u +%Y%m%d)"
+          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$TAG" \
+            adhole-state.tar.gz adhole-state.sha256 \
+            --title "adhole state $TAG" \
+            --notes "Automated full classify (5 shards, stateless). Source: ${{ github.sha }}" \
+            --latest
