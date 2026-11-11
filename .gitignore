@@ -14,3 +14,9 @@ utils/unbound-dashboard/bins/
 # Python 缓存
 __pycache__/
 *.pyc
+
+# adhole 运行时产物（CI 生成、本机 cron 拉取；不入库）
+data/state/*
+# 例外：CI 判定中国 IP 的 geoip 表 + 上游 geosite 快照（必须入库）
+!data/state/geoip-cn.json
+!data/state/geosite-cn.json
