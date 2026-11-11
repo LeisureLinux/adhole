@@ -14,3 +14,7 @@ miniapp.bilibili.com
 # Future plc（Tom's Hardware / TechRadar / PC Gamer）反广告检测的脚本域
 # 拦了会被站点判定为 adblock → 跳 report.error-report.com 的「请允许广告」墙
 html-load.com
+
+# fastly.net 被整域误收（黑名单源收录了广告子域却写成父域）
+# 会连带吞掉 g.sni.us-eu.fastly.net 等 Tom's Hardware / GitHub 的 CNAME
+fastly.net

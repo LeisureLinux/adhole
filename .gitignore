@@ -20,3 +20,4 @@ data/state/*
 # 例外：CI 判定中国 IP 的 geoip 表 + 上游 geosite 快照（必须入库）
 !data/state/geoip-cn.json
 !data/state/geosite-cn.json
+product/
