@@ -2,8 +2,11 @@ name: adhole full classify
 
 on:
   schedule:
-    # 每周日 14:00 UTC = 周一 22:00 CST（避开国内白天；本机 06:xx 拉取当天产物）
-    - cron: '0 14 * * 0'
+    # 每天 18:00 CST = 10:00 UTC。全程在 GitHub runner 上跑（约 3.5h，21:30 CST 前完成），
+    # 不触碰本机/下游服务；各 unbound 实例自行择时检查并拉取产物。
+    - cron: '0 10 * * *'
+  # 手动触发：Actions 页面「Run workflow」按钮，或 gh workflow run / REST API。
+  # 用于补跑、临时调 qps/workers；定时触发时这两个参数走默认值。
   workflow_dispatch:
     inputs:
       qps:
@@ -45,8 +48,6 @@ jobs:
           name: adhole-source
           path: |
             data/result/adhole.conf
-            data/result/adhole.conf.zst
-            data/result/adhole_status.txt
           retention-days: 3
 
   classify:
@@ -95,13 +96,9 @@ jobs:
         with:
           pattern: shard-*
           path: artifacts
-      - uses: actions/download-artifact@v4
-        with:
-          name: adhole-source
-          path: data/result
       - name: Install deps
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq unbound
+          sudo apt-get update -qq && sudo apt-get install -y -qq unbound zstd
           # sing-box 用于 rule-set compile（生成 geo-domestic.srs）
           # 固定版本，与 wpad-02 运行中的 sing-box 一致；避免上游 release 命名变化弄挂 CI
           SB_VER=1.14.4
@@ -139,16 +136,21 @@ jobs:
           ls -lh data/state/domestic-domains.txt data/state/geo-domestic.srs
           # 把上游 json 也作为 asset 发布，便于审计/复现
           cp /tmp/geosite-cn.json data/state/geosite-cn.json
-      - name: Pack
+      - name: Pack filtered tables
         run: |
           cd data/state
-          tar czf ../../adhole-state.tar.gz \
-            adhole-cn.conf adhole-noncn.conf adhole-full.conf \
-            domestic-domains.txt geo-domestic.srs
-          # 生成「当前目录」的校验和，使 fetch 脚本解压后能直接 sha256sum -c
-          sha256sum adhole-cn.conf adhole-noncn.conf adhole-full.conf \
-            domestic-domains.txt geo-domestic.srs > ../../adhole-state.sha256
-      - name: Publish assets (fixed tag `adhole`, same as scripts/main.sh)
+          # 只发布分类后的两张表。112 万条原始全表是 build 的中间产物，不发布。
+          # full = cn + noncn 合并，由 mail3 在本地合并，不额外发布第三个 zst。
+          set -o pipefail
+          zstd -19 -f -o adhole-cn.conf.zst adhole-cn.conf
+          zstd -19 -f -o adhole-noncn.conf.zst adhole-noncn.conf
+          for t in cn noncn; do zstd -dc adhole-$t.conf.zst | cmp - adhole-$t.conf; done
+          # 下游「有变化才动作」的唯一比对入口：一个小文件覆盖全部资产
+          sha256sum adhole-cn.conf.zst adhole-noncn.conf.zst \
+            domestic-domains.txt geo-domestic.srs geosite-cn.json \
+            > ../../adhole-assets.sha256
+          ls -lh adhole-cn.conf.zst adhole-noncn.conf.zst ../../adhole-assets.sha256
+      - name: Publish assets (fixed tag `adhole`)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -158,13 +160,9 @@ jobs:
             gh release create "$TAG" --repo "$GITHUB_REPOSITORY" \
               --title "adhole assets" --notes "Automated adhole zone + cn/noncn split"
           gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber \
-            data/result/adhole.conf.zst \
-            data/result/adhole_status.txt \
-            data/state/adhole-cn.conf \
-            data/state/adhole-noncn.conf \
-            data/state/adhole-full.conf \
+            data/state/adhole-cn.conf.zst \
+            data/state/adhole-noncn.conf.zst \
             data/state/domestic-domains.txt \
             data/state/geo-domestic.srs \
             data/state/geosite-cn.json \
-            adhole-state.tar.gz \
-            adhole-state.sha256
+            adhole-assets.sha256
