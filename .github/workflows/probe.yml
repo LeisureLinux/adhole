@@ -6,4 +6,4 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "probe ok"
+      - run: exit 7
